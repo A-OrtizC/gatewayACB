@@ -6,11 +6,15 @@ services:
 
     container_name: api-gateway
 
+    env_file:
+      - .env
+
     ports:
       - "3000:3000"
 
     environment:
       NODE_ENV: development
+      # NODE_ENV=production
       PORT: 3000
 
     restart: unless-stopped
