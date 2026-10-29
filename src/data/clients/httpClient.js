@@ -1,12 +1,15 @@
 const services = require("../../config/services");
+const timeouts = require("../../config/timeouts");
 
 class HttpError extends Error {
-  constructor(message, status, service, body) {
+  constructor(message, status, service, body, extra = {}) {
     super(message);
     this.name = "HttpError";
     this.status = status;
     this.service = service;
     this.body = body;
+    this.code = extra.code || null;
+    this.durationMs = extra.durationMs || null;
   }
 }
 
@@ -16,19 +19,32 @@ function getBaseUrl(service) {
     throw new HttpError(
       `URL base no definida para el microservicio "${service}". Verifica src/config/services.js y tus variables de entorno.`,
       undefined,
-      service
+      service,
+      null,
+      { code: "SERVICE_NOT_CONFIGURED" }
     );
   }
   return baseUrl.replace(/\/$/, "");
 }
 
+function getTimeoutForService(service) {
+  if (timeouts.perService && timeouts.perService[service] !== undefined) {
+    return timeouts.perService[service];
+  }
+  if (timeouts.defaults && timeouts.defaults.call !== undefined) {
+    return timeouts.defaults.call;
+  }
+  return 10000;
+}
+
 async function request(service, path, options = {}) {
+  const start = Date.now();
   const baseUrl = getBaseUrl(service);
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   const url = `${baseUrl}${normalizedPath}`;
 
   const controller = new AbortController();
-  const timeout = options.timeout ?? 10000;
+  const timeout = options.timeout ?? getTimeoutForService(service);
   const timeoutId = setTimeout(() => controller.abort(), timeout);
 
   try {
@@ -53,6 +69,7 @@ async function request(service, path, options = {}) {
     }
 
     const res = await fetch(url, fetchOptions);
+    const durationMs = Date.now() - start;
 
     const contentType = res.headers.get("content-type") || "";
     let body = null;
@@ -68,18 +85,28 @@ async function request(service, path, options = {}) {
       const message =
         (body && typeof body === "object" && body.message) ||
         `Error HTTP ${res.status} al llamar a ${service}`;
-      throw new HttpError(message, res.status, service, body);
+      throw new HttpError(message, res.status, service, body, { durationMs });
     }
 
     return body;
   } catch (err) {
+    const durationMs = Date.now() - start;
     if (err.name === "AbortError") {
-      throw new HttpError("Timeout de solicitud al microservicio", 408, service);
+      throw new HttpError("Timeout de solicitud al microservicio", 408, service, null, {
+        code: "TIMEOUT",
+        durationMs,
+      });
     }
     if (err instanceof HttpError) {
+      if (err.durationMs == null) {
+        err.durationMs = durationMs;
+      }
       throw err;
     }
-    throw new HttpError(err.message || "Error de red al llamar al microservicio", undefined, service);
+    throw new HttpError(err.message || "Error de red al llamar al microservicio", undefined, service, null, {
+      code: "NETWORK_ERROR",
+      durationMs,
+    });
   } finally {
     clearTimeout(timeoutId);
   }
