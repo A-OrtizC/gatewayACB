@@ -11,54 +11,40 @@ const gpsMock = require("../mocks/gps.mock");
 const USE_MOCK = process.env.USE_MOCK_SERVICES === "true";
 
 const GpsRepository = {
-  // Ejemplo genérico - Reemplazar con endpoints reales
-  findAll: (query = {}, headers = {}) => {
-    if (USE_MOCK) {
-      return gpsMock.findAll(query);
-    }
-    // TODO: Reemplazar "/[recurso]" con la ruta correcta
-    return get("gps", "/[recurso]", { headers, query });
+
+  createNotify: async (data, headers ={}) => {
+    return post('gps', '/api/v1/status/notify', data, { headers });
   },
 
-  findById: (id, headers = {}) => {
-    if (USE_MOCK) {
-      return gpsMock.findById(id);
-    }
-    // TODO: Reemplazar "/[recurso]/:id" con la ruta correcta
-    return get("gps", `/[recurso]/${id}`, { headers });
+  findTrackingSessions: (id, headers = {}) => {
+    
+    return get("gps", `/api/v1/tracking-sessions/${id}`, { headers });
+  },
+  createTrackingSessionObservation: (data, headers = {}) => {
+    return post("gps", `/api/v1/tracking-sessions/${id}/observations`, data, { headers });
+  }, 
+  findTrackingSessionPositions: async (tracking_id, { after_sequence = null, limit = 10 }, headers = {}) => {
+    
+    const params = {};
+    params.after_sequence = after_sequence;
+    params.limit = limit;
+    
+    return get("gps", `/api/v1/tracking-sessions/${tracking_id}/positions`, { headers, params });
   },
 
-  create: (data, headers = {}) => {
-    if (USE_MOCK) {
-      return gpsMock.create(data);
-    }
-    // TODO: Reemplazar "/[recurso]" con la ruta correcta
-    return post("gps", "/[recurso]", data, { headers });
+  createTrackingSession: async (data, idempotencyKey = null, headers = {}) => {
+    const headersWithIdempotency = idempotencyKey ? { ...headers, 'Idempotency-Key': idempotencyKey } : headers;
+    return post("gps", `/api/v1/tracking-sessions`, data, { headers: headersWithIdempotency });
   },
 
-  update: (id, data, headers = {}) => {
-    if (USE_MOCK) {
-      return gpsMock.update(id, data);
-    }
-    // TODO: Reemplazar "/[recurso]/:id" con la ruta correcta
-    return put("gps", `/[recurso]/${id}`, data, { headers });
+  findTrackingSessionControl: async (tracking_id, headers = {}) => {
+    return get("gps", `/api/v1/tracking-sessions/${tracking_id}/control`, { headers });
   },
 
-  partialUpdate: (id, data, headers = {}) => {
-    if (USE_MOCK) {
-      return gpsMock.partialUpdate(id, data);
-    }
-    // TODO: Reemplazar "/[recurso]/:id" con la ruta correcta
-    return patch("gps", `/[recurso]/${id}`, data, { headers });
-  },
-
-  remove: (id, headers = {}) => {
-    if (USE_MOCK) {
-      return gpsMock.remove(id);
-    }
-    // TODO: Reemplazar "/[recurso]/:id" con la ruta correcta
-    return del("gps", `/[recurso]/${id}`, { headers });
+  disableTrackingSession: async (tracking_id, headers = {}) => {
+    return patch("gps", `/api/v1/tracking-sessions/${tracking_id}/disable`, { headers });
   },
 };
 
 module.exports = GpsRepository;
+
