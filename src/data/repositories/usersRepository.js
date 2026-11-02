@@ -1,64 +1,58 @@
 const { get, post, put, patch, del } = require("../clients/httpClient");
-const usersMock = require("../mocks/users.mock");
 
-// Repositorio genérico para el microservicio de usuarios (users)
-// TODO: Ajustar rutas, verbos HTTP y nombres de métodos una vez que el equipo nos proporcione
-// la especificación de endpoints de este microservicio.
-// IMPORTANTE: Este repositorio debe ser utilizado desde la capa de lógica (orquestadores/servicios),
-// nunca desde controladores directamente.
-// TODO: Quitar mocks al integrar con MS real
-
-const USE_MOCK = process.env.USE_MOCK_SERVICES === "true";
+const BASE_URL = "/api/v1";
+const GUIDES_RESOURCE = `${BASE_URL}/guides`;
+const SEARCH_RESOURCE = `${BASE_URL}/search`;
+const STUDENTS_RESOURCE = `${BASE_URL}/students`;
 
 const UsersRepository = {
-  // Ejemplo genérico - Reemplazar con endpoints reales
-  findAll: (query = {}, headers = {}) => {
-    if (USE_MOCK) {
-      return usersMock.findAll(query);
-    }
-    // TODO: Reemplazar "/[recurso]" con la ruta correcta
-    return get("users", "/[recurso]", { headers, query });
+  // Guides methods
+  createGuide: (data, headers = {}) => {
+    return post("users", GUIDES_RESOURCE, data, { headers });
   },
 
-  findById: (id, headers = {}) => {
-    if (USE_MOCK) {
-      return usersMock.findById(id);
-    }
-    // TODO: Reemplazar "/[recurso]/:id" con la ruta correcta
-    return get("users", `/[recurso]/${id}`, { headers });
+  findAllGuides: (query = {}, headers = {}) => {
+    return get("users", GUIDES_RESOURCE, { headers, query });
   },
 
-  create: (data, headers = {}) => {
-    if (USE_MOCK) {
-      return usersMock.create(data);
-    }
-    // TODO: Reemplazar "/[recurso]" con la ruta correcta
-    return post("users", "/[recurso]", data, { headers });
+  findGuideById: (id, headers = {}) => {
+    return get("users", `${GUIDES_RESOURCE}/${id}`, { headers });
   },
 
-  update: (id, data, headers = {}) => {
-    if (USE_MOCK) {
-      return usersMock.update(id, data);
-    }
-    // TODO: Reemplazar "/[recurso]/:id" con la ruta correcta
-    return put("users", `/[recurso]/${id}`, data, { headers });
+  updateGuide: (id, data, headers = {}) => {
+    return put("guides", `${GUIDES_RESOURCE}/${id}`, data, { headers });
   },
 
-  partialUpdate: (id, data, headers = {}) => {
-    if (USE_MOCK) {
-      return usersMock.partialUpdate(id, data);
-    }
-    // TODO: Reemplazar "/[recurso]/:id" con la ruta correcta
-    return patch("users", `/[recurso]/${id}`, data, { headers });
+  // Students methods
+  createStudent: (data, headers = {}) => {
+    return post("users", STUDENTS_RESOURCE, data, { headers });
   },
 
-  remove: (id, headers = {}) => {
-    if (USE_MOCK) {
-      return usersMock.remove(id);
-    }
-    // TODO: Reemplazar "/[recurso]/:id" con la ruta correcta
-    return del("users", `/[recurso]/${id}`, { headers });
+  assignGuardianToStudent: (id, guardianData, headers = {}) => {
+    return post("users", `${STUDENTS_RESOURCE}/${id}/guardians`, guardianData, { headers });
   },
+
+  findAllStudents: (pageable, headers = {}) => {
+    return get("users", STUDENTS_RESOURCE, { headers, query: pageable });
+  },
+
+  findStudentsBySchool: (schoolId, pageable, headers = {}) => {
+    return get("users", `${STUDENTS_RESOURCE}/school/${schoolId}`, { headers, query: pageable });
+  },
+
+  findStudentById: (id, headers = {}) => {
+    return get("users", `${STUDENTS_RESOURCE}/${id}`, { headers });
+  },
+
+  updateStudent: (id, data, headers = {}) => {
+    return put("users", `${STUDENTS_RESOURCE}/${id}`, data, { headers });
+  },
+
+  // Person Search methods
+  searchByDocument: (type, number, headers = {}) => {
+    return get("search", SEARCH_RESOURCE, { headers, query: { type, number } });
+  },
+
 };
 
 module.exports = UsersRepository;
