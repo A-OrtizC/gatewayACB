@@ -15,17 +15,17 @@ const RoutesRepository = {
   findById: (id, headers = {}) => {
 
     
-    return get("routes", `/routes/${id}`, { headers });
+    return get("routes", `/routes/${encodeURIComponent(id)}`, { headers });
   },
 
   findFirstMettingPoint: (id, headers = {}) => {
 
-    return get("routes", `/routes/${id}/first-metting-point`, { headers });
+    return get("routes", `/routes/${encodeURIComponent(id)}/first-metting-point`, { headers });
   },
 
   findEndPoints: (id, headers = {}) => {
 
-    return get("routes", `/routes/${id}/endpoints`, { headers });
+    return get("routes", `/routes/${encodeURIComponent(id)}/endpoints`, { headers });
   
   },
 

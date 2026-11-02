@@ -41,7 +41,18 @@ async function request(service, path, options = {}) {
   const start = Date.now();
   const baseUrl = getBaseUrl(service);
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  const url = `${baseUrl}${normalizedPath}`;
+  const url = new URL(`${baseUrl}${normalizedPath}`);
+  const query = options.query;
+  if (query && typeof query === "object") {
+    for (const [key, value] of Object.entries(query)) {
+      const values = Array.isArray(value) ? value : [value];
+      for (const item of values) {
+        if (item !== undefined && item !== null) {
+          url.searchParams.append(key, String(item));
+        }
+      }
+    }
+  }
 
   const controller = new AbortController();
   const timeout = options.timeout ?? getTimeoutForService(service);
@@ -53,11 +64,12 @@ async function request(service, path, options = {}) {
       ...(options.headers || {}),
     };
 
+    const { timeout: _timeout, query: _query, ...requestOptions } = options;
     const fetchOptions = {
+      ...requestOptions,
       method: options.method || "GET",
       headers,
       signal: controller.signal,
-      ...options,
     };
 
     if (options.body !== undefined && options.body !== null) {
