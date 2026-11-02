@@ -1,16 +1,16 @@
 const express = require("express");
-const routesRepository = require("./data/repositories/routesRepository");
-const createRoutesService = require("./logic/services/routes.service");
-const createRoutesController = require("./presentation/controllers/routes.controller");
-const createRoutesRouter = require("./presentation/routes/routes.routes");
+const pathsRepository = require("./data/repositories/pathsRepository");
+const createPathsService = require("./logic/services/paths.service");
+const createPathsController = require("./presentation/controllers/paths.controller");
+const createPathsRouter = require("./presentation/routes/paths.routes");
 const requestContext = require("./presentation/middlewares/requestContext");
 const errorHandler = require("./presentation/middlewares/errorHandler");
 const notFoundHandler = require("./presentation/middlewares/notFoundHandler");
 
-function createApp({ routesService } = {}) {
+function createApp({ pathsService } = {}) {
   const app = express();
-  const service = routesService || createRoutesService(routesRepository);
-  const controller = createRoutesController(service);
+  const service = pathsService || createPathsService(pathsRepository);
+  const controller = createPathsController(service);
 
   app.use(requestContext);
   app.use(express.json({ limit: "1mb" }));
@@ -28,7 +28,7 @@ function createApp({ routesService } = {}) {
     });
   });
 
-  app.use("/api/v1/routes", createRoutesRouter(controller));
+  app.use("/api/v1/routes", createPathsRouter(controller));
 
   app.use(notFoundHandler);
   app.use(errorHandler);

@@ -5,7 +5,7 @@ const {
   validateRouteId
 } = require("../middlewares/validation");
 
-function createRoutesRouter(controller) {
+function createPathsRouter(controller) {
   const router = express.Router();
 
   router.get("/", validateQuery, controller.findAll);
@@ -19,4 +19,4 @@ function createRoutesRouter(controller) {
   return router;
 }
 
-module.exports = createRoutesRouter;
+module.exports = createPathsRouter;

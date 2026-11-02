@@ -18,3 +18,11 @@ services:
       PORT: 5062
 
     restart: unless-stopped
+
+    networks:
+      - acb-net
+    
+networks:
+  acb-net:
+    external: true
+    name: acb-net

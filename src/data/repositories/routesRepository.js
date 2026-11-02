@@ -1,7 +1,7 @@
 const { get, post, put, patch, del } = require("../clients/httpClient");
 const pathsMock = require("../mocks/paths.mock");
 
-// Repositorio genérico para el microservicio de paths
+// Repositorio genérico para el microservicio de routes
 // TODO: Ajustar rutas, verbos HTTP y nombres de métodos una vez que el equipo nos proporcione
 // la especificación de endpoints de este microservicio.
 // IMPORTANTE: Este repositorio debe ser utilizado desde la capa de lógica (orquestadores/servicios),

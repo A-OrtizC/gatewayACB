@@ -2,7 +2,7 @@ const { normalizeMsError } = require("../errors/normalizeMsError");
 const CommunicationError = require("../errors/CommunicationError");
 const NotFoundError = require("../errors/NotFoundError");
 
-function createRoutesService(repository) {
+function createPathsService(repository) {
   async function callRepository(operation, correlationId) {
     try {
       return await operation();
@@ -91,4 +91,4 @@ function createRoutesService(repository) {
   };
 }
 
-module.exports = createRoutesService;
+module.exports = createPathsService;

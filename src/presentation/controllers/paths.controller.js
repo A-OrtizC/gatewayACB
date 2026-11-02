@@ -1,4 +1,4 @@
-function createRoutesController(service) {
+function createPathsController(service) {
   function getRequestContext(req) {
     const headers = {};
     if (req.headers.authorization) {
@@ -69,4 +69,4 @@ function createRoutesController(service) {
   };
 }
 
-module.exports = createRoutesController;
+module.exports = createPathsController;

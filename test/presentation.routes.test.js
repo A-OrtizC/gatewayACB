@@ -2,16 +2,16 @@ const assert = require("node:assert/strict");
 const { once } = require("node:events");
 const test = require("node:test");
 
-process.env.ROUTES_SERVICE_URL = "http://routes.test";
+process.env.PATHS_SERVICE_URL = "http://paths.test";
 const appModule = require("../src/app");
 const app = appModule.createApp;
 const CommunicationError = require("../src/logic/errors/CommunicationError");
-const createRoutesService = require("../src/logic/services/routes.service");
+const createPathsService = require("../src/logic/services/paths.service");
 const httpClient = require("../src/data/clients/httpClient");
 
 test("API HTTP de rutas", async (t) => {
   const calls = [];
-  const routesService = {
+  const pathsService = {
     findAll: async (...args) => {
       calls.push(["findAll", ...args]);
       return { items: [{ id: "route-1" }], total: 1 };
@@ -45,7 +45,7 @@ test("API HTTP de rutas", async (t) => {
       return { id: "import-1" };
     }
   };
-  const server = app({ routesService }).listen(0);
+  const server = app({ pathsService }).listen(0);
   await once(server, "listening");
   t.after(() => new Promise((resolve, reject) => {
     server.close((error) => error ? reject(error) : resolve());
@@ -136,13 +136,13 @@ test("API HTTP de rutas", async (t) => {
 
   await t.test("errores de comunicación se normalizan", async () => {
     const failingApp = app({
-      routesService: {
+      pathsService: {
         findAll: async () => {
           throw new CommunicationError({
             type: "NETWORK",
-            code: "MS_ROUTES_NETWORK",
+            code: "MS_PATHS_NETWORK",
             message: "Fallo privado",
-            service: "routes"
+            service: "paths"
           });
         }
       }
@@ -159,10 +159,10 @@ test("API HTTP de rutas", async (t) => {
     assert.equal(response.status, 502);
     assert.deepEqual(await response.json(), {
       error: {
-        code: "MS_ROUTES_NETWORK",
+        code: "MS_PATHS_NETWORK",
         message: "Ocurrió un error interno en el Gateway.",
         correlationId: response.headers.get("x-correlation-id"),
-        service: "routes"
+        service: "paths"
       }
     });
   });
@@ -177,7 +177,7 @@ test("OpenAPI publica rutas y casos de error", async () => {
 
 test("caso de uso agrega los datos de ruta usando el repositorio", async () => {
   const called = [];
-  const service = createRoutesService({
+  const service = createPathsService({
     findById: async () => {
       called.push("route");
       return { id: "route-1" };
@@ -213,7 +213,7 @@ test("cliente HTTP serializa filtros y elimina opciones internas de fetch", asyn
   };
 
   try {
-    await httpClient.get("routes", "/routes/search", {
+    await httpClient.get("paths", "/routes/search", {
       query: { name: "Ruta 1", tag: ["uno", "dos"] },
       timeout: 1000
     });
