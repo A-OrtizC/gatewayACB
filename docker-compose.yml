@@ -10,11 +10,11 @@ services:
       - .env
 
     ports:
-      - "3000:3000"
+      - "5060:5060"
 
     environment:
       NODE_ENV: development
       # NODE_ENV=production
-      PORT: 3000
+      PORT: 5060
 
     restart: unless-stopped
