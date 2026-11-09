@@ -1,7 +1,7 @@
 const { get, post, put, patch, del } = require("../clients/httpClient");
 const pathsMock = require("../mocks/paths.mock");
 
-BASE_URL = "/api/v1";
+const BASE_URL = "/api/v1";
 
 const RoutesRepository = {
   // MettingPoint methods

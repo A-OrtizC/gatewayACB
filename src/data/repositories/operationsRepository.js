@@ -3,41 +3,38 @@ const { get, post, put, patch, del } = require("../clients/httpClient");
 BASE_URL = "/api/v1";
 
 const OperationsRepository = {
+  //Guide checkin audit methods
+  listGuideCheckInAttempts: (tripGuideId, headers = {}) => {
+    return get("operations", `${BASE_URL}/trip-guides/${tripGuideId}/check-ins`, { headers });
+  },
 
-  //Guide cehckin audit methods
+  //Guide Checkin methods
+  recordGeolocationResult: (tripGuideId, data, headers = {}) => {
+    return post("operations", `${BASE_URL}/internal/trip-guides/${tripGuideId}/check-ins`, data, { headers });
+  },
+
+  // Guide fault methods
+  listCyclesForGuide: (guideId, headers = {}) => {
+    return get("operations", `${BASE_URL}/guide-faults/guides/${guideId}/cycles`, { headers });
+  },
+  listMinorFaults: (cycleId, headers = {}) => {
+    return get("operations", `${BASE_URL}/guide-faults/cycles/${cycleId}/minor`, { headers });
+  },
+  getMajorFault: (majorFaultId, headers = {}) => {
+    return get("operations", `${BASE_URL}/guide-faults/major/${majorFaultId}`, { headers });
+  },
+  markMinorFaultNotified: (minorFaultId, headers = {}) => {
+    return put("operations", `${BASE_URL}/guide-faults/minor/${minorFaultId}/notified`, { headers});
+  },
+  markMajorFaultNotified: (majorFaultId, headers = {}) => {
+    return put("operations", `${BASE_URL}/guide-faults/major/${majorFaultId}/notified`, { headers });
+  },
+  markMajorFaultMinuted: (majorFaultId, headers = {}) => {
+    return put("operations", `${BASE_URL}/guide-faults/major/${majorFaultId}/minuted`, { headers });
+  },
+
+  // Trip methods
   
-  // Ejemplo genérico - Reemplazar con endpoints reales
-  findAll: (query = {}, headers = {}) => {
-    if (USE_MOCK) {
-      return operationsMock.findAll(query);
-    }
-    // TODO: Reemplazar "/[recurso]" con la ruta correcta
-    return get("operations", "/[recurso]", { headers, query });
-  },
-
-  findById: (id, headers = {}) => {
-    if (USE_MOCK) {
-      return operationsMock.findById(id);
-    }
-    // TODO: Reemplazar "/[recurso]/:id" con la ruta correcta
-    return get("operations", `/[recurso]/${id}`, { headers });
-  },
-
-  create: (data, headers = {}) => {
-    if (USE_MOCK) {
-      return operationsMock.create(data);
-    }
-    // TODO: Reemplazar "/[recurso]" con la ruta correcta
-    return post("operations", "/[recurso]", data, { headers });
-  },
-
-  update: (id, data, headers = {}) => {
-    if (USE_MOCK) {
-      return operationsMock.update(id, data);
-    }
-    // TODO: Reemplazar "/[recurso]/:id" con la ruta correcta
-    return put("operations", `/[recurso]/${id}`, data, { headers });
-  },
 
   partialUpdate: (id, data, headers = {}) => {
     if (USE_MOCK) {
@@ -57,3 +54,4 @@ const OperationsRepository = {
 };
 
 module.exports = OperationsRepository;
+

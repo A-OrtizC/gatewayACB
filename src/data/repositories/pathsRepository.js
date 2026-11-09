@@ -1,6 +1,6 @@
 const { get, post, put, patch, del } = require("../clients/httpClient");
 
-BASE_URL = "/api/v1";
+const BASE_URL = "/api/v1";
 
 const PathsRepository = {
   findAllRoutes: (query = {}, headers = {}) => {
