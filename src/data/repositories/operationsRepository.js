@@ -1,16 +1,11 @@
 const { get, post, put, patch, del } = require("../clients/httpClient");
-const operationsMock = require("../mocks/operations.mock");
 
-// Repositorio genérico para el microservicio de operaciones (operations)
-// TODO: Ajustar rutas, verbos HTTP y nombres de métodos una vez que el equipo nos proporcione
-// la especificación de endpoints de este microservicio.
-// IMPORTANTE: Este repositorio debe ser utilizado desde la capa de lógica (orquestadores/servicios),
-// nunca desde controladores directamente.
-// TODO: Quitar mocks al integrar con MS real
-
-const USE_MOCK = process.env.USE_MOCK_SERVICES === "true";
+BASE_URL = "/api/v1";
 
 const OperationsRepository = {
+
+  //Guide cehckin audit methods
+  
   // Ejemplo genérico - Reemplazar con endpoints reales
   findAll: (query = {}, headers = {}) => {
     if (USE_MOCK) {
