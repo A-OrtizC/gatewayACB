@@ -1,6 +1,6 @@
 const { get, post, put, patch, del } = require("../clients/httpClient");
 
-BASE_URL = "/api/v1";
+const BASE_URL = "/api/v1";
 
 const OperationsRepository = {
   //Guide checkin audit methods
@@ -34,23 +34,47 @@ const OperationsRepository = {
   },
 
   // Trip methods
+  create: (data, headers = {}) => {
+    return post("operations", `${BASE_URL}/trips`, data, { headers });
+  },
+  getTrip: (tripId, headers = {}) => {
+    return get("operations", `${BASE_URL}/trips/${tripId}`, { headers });
+  },
+  listGuides: (tripId, headers = {}) => {
+    return get("operations", `${BASE_URL}/trips/${tripId}/guides`, { headers });
+  },
+  replaceGuide: (tripId, tripGuideId, data, headers = {}) => {
+    return put("operations", `${BASE_URL}/trips/${tripId}/guides/${tripGuideId}/replacement`, data, { headers });
+  },
+  getByRouteAndDate: (routeId, date, headers = {}) => {
+    return get("operations", `${BASE_URL}/trips/by-route/${routeId}`, { headers, query: { date } });
+  },
+  startTrip: (tripId, data, headers = {}) => {
+    return post("operations", `${BASE_URL}/trips/${tripId}/start`, data, { headers });
+  },
+  finishTrip: (tripId, data, headers = {}) => {
+    return post("operations", `${BASE_URL}/trips/${tripId}/finish`, data, { headers });
+  },
+
+  // Trip Event methods
+  listEvents: (tripId, headers = {}) => {
+    return get("operations", `${BASE_URL}/trips/${tripId}/events`, { headers });
+  },
+  registerEvent: (tripId, data, headers = {}) => {
+    return post("operations", `${BASE_URL}/trips/${tripId}/events`, data, { headers });
+  },
+
+  // Trip student attendance methods
+  initializeRoster: (tripId, data, headers = {}) => {
+    return post("operations", `${BASE_URL}/trips/${tripId}/attendance/roster`, data, { headers });
+  },
+  listStudentAttendance: (tripId, headers = {}) => {
+    return get("operations", `${BASE_URL}/trips/${tripId}/attendance`, { headers });
+  },
+  registerOrUpdateAttendance: (tripId, studentId, data, headers = {}) => {
+    return put("operations", `${BASE_URL}/trips/${tripId}/attendance/${studentId}`, data, { headers });
+  },
   
-
-  partialUpdate: (id, data, headers = {}) => {
-    if (USE_MOCK) {
-      return operationsMock.partialUpdate(id, data);
-    }
-    // TODO: Reemplazar "/[recurso]/:id" con la ruta correcta
-    return patch("operations", `/[recurso]/${id}`, data, { headers });
-  },
-
-  remove: (id, headers = {}) => {
-    if (USE_MOCK) {
-      return operationsMock.remove(id);
-    }
-    // TODO: Reemplazar "/[recurso]/:id" con la ruta correcta
-    return del("operations", `/[recurso]/${id}`, { headers });
-  },
 };
 
 module.exports = OperationsRepository;
