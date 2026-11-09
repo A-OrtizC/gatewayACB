@@ -33,6 +33,10 @@ const PathsRepository = {
   createImportKMZ: (data, headers = {}) => {
     return post("paths", `${BASE_URL}/imports/kmz`, data, { headers });
   },
+
+  notifyStatus: (data, headers = {}) => {
+    return post("paths", `${BASE_URL}/status/notify`, data, { headers });
+  },
 };
 
 module.exports = PathsRepository;
