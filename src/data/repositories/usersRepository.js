@@ -20,7 +20,7 @@ const UsersRepository = {
   },
 
   updateGuide: (id, data, headers = {}) => {
-    return put("guides", `${GUIDES_RESOURCE}/${id}`, data, { headers });
+    return put("users", `${GUIDES_RESOURCE}/${id}`, data, { headers });
   },
 
   // Students methods
@@ -50,7 +50,7 @@ const UsersRepository = {
 
   // Person Search methods
   searchByDocument: (type, number, headers = {}) => {
-    return get("search", SEARCH_RESOURCE, { headers, query: { type, number } });
+    return get("users", SEARCH_RESOURCE, { headers, query: { type, number } });
   },
 
 };

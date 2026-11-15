@@ -1,6 +1,6 @@
 module.exports = {
   perService: {
-    auth: 3000,
+    auth: 5000,
     users: 3000,
     operations: 4000,
     routes: 3000,

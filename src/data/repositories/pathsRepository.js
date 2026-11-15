@@ -21,7 +21,7 @@ const PathsRepository = {
 
   findFirstMettingPoint: (id, headers = {}) => {
 
-    return get("paths", `${BASE_URL}/routes/${id}/first-metting-point`, { headers });
+    return get("paths", `${BASE_URL}/routes/${id}/first-meeting-point`, { headers });
   },
 
   findEndPoints: (id, headers = {}) => {
