@@ -20,6 +20,10 @@ test("API HTTP de rutas", async (t) => {
       calls.push(["search", ...args]);
       return { items: [{ id: "route-1" }], total: 1 };
     },
+    listMeetingPoints: async (...args) => {
+      calls.push(["listMeetingPoints", ...args]);
+      return [{ _id: "point-1", name: "Parque Principal" }];
+    },
     findById: async (...args) => {
       calls.push(["findById", ...args]);
       return { id: args[0], name: "Ruta" };
@@ -104,6 +108,13 @@ test("API HTTP de rutas", async (t) => {
   });
 
   await t.test("puntos e importación", async () => {
+    const meetingPoints = await fetch(`${baseUrl}/api/v1/meeting-points`);
+    assert.equal(meetingPoints.status, 200);
+    assert.deepEqual(await meetingPoints.json(), [
+      { _id: "point-1", name: "Parque Principal" }
+    ]);
+    assert.equal(calls.at(-1)[0], "listMeetingPoints");
+
     const meetingPoint = await fetch(`${baseUrl}/api/v1/routes/route-1/first-meeting-point`);
     assert.equal(meetingPoint.status, 200);
     assert.deepEqual(await meetingPoint.json(), { name: "Inicio" });
@@ -112,14 +123,22 @@ test("API HTTP de rutas", async (t) => {
     assert.equal(endpoints.status, 200);
     assert.deepEqual(await endpoints.json(), [{ name: "Fin" }]);
 
+    const formData = new FormData();
+    formData.append(
+      "file",
+      new Blob(["kmz fixture"], { type: "application/vnd.google-earth.kmz" }),
+      "route.kmz"
+    );
     const imported = await fetch(`${baseUrl}/api/v1/routes/imports/kmz`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ fileName: "route.kmz" })
+      body: formData
     });
     assert.equal(imported.status, 201);
     assert.deepEqual(await imported.json(), { id: "import-1" });
-    assert.deepEqual(calls.at(-1)[1], { fileName: "route.kmz" });
+    assert.ok(Buffer.isBuffer(calls.at(-1)[1]));
+    assert.match(calls.at(-1)[2]["content-type"], /^multipart\/form-data; boundary=/);
+    assert.ok(calls.at(-1)[1].includes(Buffer.from('filename="route.kmz"')));
+    assert.ok(calls.at(-1)[1].includes(Buffer.from("kmz fixture")));
   });
 
   await t.test("validación y endpoint inexistente", async () => {
@@ -133,6 +152,13 @@ test("API HTTP de rutas", async (t) => {
       body: "[]"
     });
     assert.equal(invalidBody.status, 400);
+
+    const oversizedUpload = await fetch(`${baseUrl}/api/v1/routes/imports/kmz`, {
+      method: "POST",
+      headers: { "content-type": "multipart/form-data; boundary=test-boundary" },
+      body: Buffer.alloc(22 * 1024 * 1024)
+    });
+    assert.equal(oversizedUpload.status, 413);
 
     const missing = await fetch(`${baseUrl}/api/v1/unknown`);
     assert.equal(missing.status, 404);
@@ -185,6 +211,7 @@ test("OpenAPI publica todos los endpoints del gateway", async () => {
     "/students/{id}/guardians": ["post"],
     "/students/{id}": ["get", "put"],
     "/search": ["get"],
+    "/meeting-points": ["get"],
     "/routes": ["get"],
     "/routes/search": ["get"],
     "/routes/{id}": ["get"],
@@ -231,6 +258,13 @@ test("OpenAPI publica todos los endpoints del gateway", async () => {
     "RouteCode",
     "RouteCodeAlternative"
   ]);
+  const importContent =
+    openapi.paths["/routes/imports/kmz"].post.requestBody.content;
+  assert.ok(importContent["multipart/form-data"]);
+  assert.equal(
+    importContent["multipart/form-data"].schema.properties.file.format,
+    "binary"
+  );
 });
 
 test("todas las referencias del OpenAPI resuelven", async () => {

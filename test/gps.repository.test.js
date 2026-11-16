@@ -129,3 +129,31 @@ test("pathsRepository expone status/notify", async (t) => {
   assert.equal(call.options.headers["x-correlation-id"], "c-2");
   assert.deepEqual(JSON.parse(call.options.body), { route_id: "route-1", status: "active" });
 });
+
+test("pathsRepository lista puntos de encuentro y reenvía KMZ multipart sin serializarlo", async (t) => {
+  const stub = stubFetch();
+  t.after(stub.restore);
+
+  const pathsRepository = require("../src/data/repositories/pathsRepository");
+  await pathsRepository.findAllMeetingPoints({ "x-correlation-id": "c-3" });
+
+  let call = stub.calls.at(-1);
+  assert.equal(call.options.method, "GET");
+  assert.equal(call.url, "http://paths.test/api/v1/meeting-points");
+  assert.equal(call.options.headers["x-correlation-id"], "c-3");
+
+  const boundary = "gateway-test-boundary";
+  const body = Buffer.from(`--${boundary}\r\nfile-content\r\n--${boundary}--\r\n`);
+  const contentType = `multipart/form-data; boundary=${boundary}`;
+  await pathsRepository.createImportKMZ(body, {
+    "content-type": contentType,
+    "x-correlation-id": "c-4",
+  });
+
+  call = stub.calls.at(-1);
+  assert.equal(call.options.method, "POST");
+  assert.equal(call.url, "http://paths.test/api/v1/imports/kmz");
+  assert.equal(call.options.headers["content-type"], contentType);
+  assert.deepEqual(call.options.body, body);
+  assert.equal(call.options.headers["x-correlation-id"], "c-4");
+});

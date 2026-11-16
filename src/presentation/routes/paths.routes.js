@@ -1,8 +1,8 @@
 const express = require("express");
 const {
-  validateJsonBody,
   validateQuery,
-  validateRouteId
+  validateRouteId,
+  validateMultipartBody
 } = require("../middlewares/validation");
 
 function createPathsRouter(controller) {
@@ -14,9 +14,20 @@ function createPathsRouter(controller) {
   router.get("/:id/first-meeting-point", validateRouteId, controller.getFirstMeetingPoint);
   router.get("/:id/endpoints", validateRouteId, controller.getEndpoints);
   router.get("/:id", validateRouteId, controller.findById);
-  router.post("/imports/kmz", validateJsonBody, controller.importKmz);
+  router.post(
+    "/imports/kmz",
+    express.raw({ type: "multipart/form-data", limit: 21 * 1024 * 1024 }),
+    validateMultipartBody,
+    controller.importKmz
+  );
 
   return router;
 }
 
-module.exports = createPathsRouter;
+function createMeetingPointsRouter(controller) {
+  const router = express.Router();
+  router.get("/", controller.listMeetingPoints);
+  return router;
+}
+
+module.exports = { createPathsRouter, createMeetingPointsRouter };

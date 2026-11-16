@@ -4,19 +4,19 @@ const BASE_URL = "/api/v1";
 
 const PathsRepository = {
   findAllRoutes: (query = {}, headers = {}) => {
-
     return get("paths", `${BASE_URL}/routes`, { headers, query });
   },
   
   searchRoutes: (query = {}, headers = {}) => {
-
     return get("paths", `${BASE_URL}/routes/search`, { headers, query });
   },
 
   findById: (id, headers = {}) => {
-
-    
     return get("paths", `${BASE_URL}/routes/${id}`, { headers });
+  },
+
+  findAllMeetingPoints: (headers = {}) => {
+    return get("paths", `${BASE_URL}/meeting-points`, { headers });
   },
 
   findFirstMettingPoint: (id, headers = {}) => {
@@ -25,9 +25,7 @@ const PathsRepository = {
   },
 
   findEndPoints: (id, headers = {}) => {
-
     return get("paths", `${BASE_URL}/routes/${id}/endpoints`, { headers });
-  
   },
 
   createImportKMZ: (data, headers = {}) => {

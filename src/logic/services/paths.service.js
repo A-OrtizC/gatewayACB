@@ -32,6 +32,13 @@ function createPathsService(repository) {
       );
     },
 
+    listMeetingPoints(headers, correlationId) {
+      return callRepository(
+        () => repository.findAllMeetingPoints(headers),
+        correlationId
+      );
+    },
+
     findById(id, headers, correlationId) {
       return callRepository(
         () => repository.findById(id, headers),

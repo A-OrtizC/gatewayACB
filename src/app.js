@@ -8,7 +8,10 @@ const createUsersService = require("./logic/services/users.service");
 const createPathsController = require("./presentation/controllers/paths.controller");
 const createAuthController = require("./presentation/controllers/auth.controller");
 const createUsersController = require("./presentation/controllers/users.controller");
-const createPathsRouter = require("./presentation/routes/paths.routes");
+const {
+  createPathsRouter,
+  createMeetingPointsRouter
+} = require("./presentation/routes/paths.routes");
 const createAuthRouter = require("./presentation/routes/auth.routes");
 const {
   createGuidesRouter,
@@ -47,6 +50,7 @@ function createApp({ pathsService, authService, usersService } = {}) {
   app.use("/api/v1/students", createStudentsRouter(users));
   app.use("/api/v1/search", createSearchRouter(users));
   app.use("/api/v1/routes", createPathsRouter(controller));
+  app.use("/api/v1/meeting-points", createMeetingPointsRouter(controller));
 
   app.use(notFoundHandler);
   app.use(errorHandler);

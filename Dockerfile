@@ -17,7 +17,7 @@ COPY src/ ./src/
 ENV NODE_ENV=production
 
 # Documentar el puerto que utiliza la aplicación
-EXPOSE 3000
+EXPOSE 5062
 
 # Iniciar el API Gateway
 CMD ["node", "src/server.js"]

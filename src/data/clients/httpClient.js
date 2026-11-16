@@ -59,10 +59,13 @@ async function request(service, path, options = {}) {
   const timeoutId = setTimeout(() => controller.abort(), timeout);
 
   try {
-    const headers = {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    };
+    const headers = { ...(options.headers || {}) };
+    const hasContentType = Object.keys(headers).some(
+      (key) => key.toLowerCase() === "content-type"
+    );
+    if (!hasContentType) {
+      headers["Content-Type"] = "application/json";
+    }
 
     const { timeout: _timeout, query: _query, ...requestOptions } = options;
     const fetchOptions = {
@@ -73,7 +76,13 @@ async function request(service, path, options = {}) {
     };
 
     if (options.body !== undefined && options.body !== null) {
-      if (typeof options.body === "object" && !(options.body instanceof FormData)) {
+      const isFormData =
+        typeof FormData !== "undefined" && options.body instanceof FormData;
+      const isBinary =
+        Buffer.isBuffer(options.body) ||
+        options.body instanceof ArrayBuffer ||
+        ArrayBuffer.isView(options.body);
+      if (typeof options.body === "object" && !isFormData && !isBinary) {
         fetchOptions.body = JSON.stringify(options.body);
       } else {
         fetchOptions.body = options.body;

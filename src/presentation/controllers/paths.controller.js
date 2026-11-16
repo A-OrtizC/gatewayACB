@@ -21,6 +21,15 @@ function createPathsController(service) {
       res.status(200).json(result);
     },
 
+    async listMeetingPoints(req, res) {
+      const context = getRequestContext(req);
+      const result = await service.listMeetingPoints(
+        context.headers,
+        context.correlationId
+      );
+      res.status(200).json(result);
+    },
+
     async findById(req, res) {
       const context = getRequestContext(req);
       const result = await service.findById(req.params.id, context.headers, context.correlationId);
@@ -59,6 +68,9 @@ function createPathsController(service) {
 
     async importKmz(req, res) {
       const context = getRequestContext(req);
+      if (req.headers["content-type"]) {
+        context.headers["content-type"] = req.headers["content-type"];
+      }
       const result = await service.importKmz(
         req.body,
         context.headers,

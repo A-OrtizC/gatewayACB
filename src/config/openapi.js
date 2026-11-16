@@ -38,6 +38,10 @@ const openapi = {
     {
       name: "Routes",
       description: "Consultas y operaciones disponibles para el servicio de rutas geográficas"
+    },
+    {
+      name: "MeetingPoints",
+      description: "Consulta de puntos de encuentro geográficos"
     }
   ],
   paths: {
@@ -455,6 +459,31 @@ const openapi = {
         }
       }
     },
+    "/meeting-points": {
+      get: {
+        tags: ["MeetingPoints"],
+        summary: "Listar puntos de encuentro",
+        description: "Devuelve los puntos de encuentro almacenados por el servicio de paths.",
+        operationId: "listMeetingPoints",
+        security: [],
+        parameters: [{ $ref: "#/components/parameters/CorrelationId" }],
+        responses: {
+          200: {
+            description: "Puntos de encuentro disponibles.",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/MeetingPoint" }
+                }
+              }
+            }
+          },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
     "/routes": {
       get: {
         tags: ["Routes"],
@@ -639,17 +668,24 @@ const openapi = {
         tags: ["Routes"],
         summary: "Importar datos KMZ",
         description:
-          "Valida que el cuerpo sea un objeto JSON y lo reenvía al endpoint de importación del servicio de paths. El servicio de paths define la importación como una carga multipart de archivo; si el upstream exige ese formato, la petición puede ser rechazada con 422.",
+          "Reenvía el archivo KMZ en el campo multipart 'file'. El servicio de paths admite archivos de hasta 20 MiB.",
         operationId: "importKmz",
         security: [],
         parameters: [{ $ref: "#/components/parameters/CorrelationId" }],
         requestBody: {
           required: true,
           content: {
-            "application/json": {
+            "multipart/form-data": {
               schema: {
                 type: "object",
-                additionalProperties: true
+                required: ["file"],
+                properties: {
+                  file: {
+                    type: "string",
+                    format: "binary",
+                    description: "Archivo .kmz (máximo 20 MiB)."
+                  }
+                }
               }
             }
           }
@@ -664,6 +700,14 @@ const openapi = {
             }
           },
           400: { $ref: "#/components/responses/BadRequest" },
+          413: {
+            description: "El archivo supera el límite de tamaño permitido.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
           422: { $ref: "#/components/responses/UnprocessableEntity" },
           502: { $ref: "#/components/responses/UpstreamError" },
           504: { $ref: "#/components/responses/UpstreamTimeout" }

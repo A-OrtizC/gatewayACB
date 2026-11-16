@@ -41,4 +41,16 @@ function validateJsonBody(req, res, next) {
   return next();
 }
 
-module.exports = { validateRouteId, validateQuery, validateJsonBody };
+function validateMultipartBody(req, res, next) {
+  if (!req.is("multipart/form-data") || !Buffer.isBuffer(req.body) || req.body.length === 0) {
+    return validationError(req, res, "El cuerpo debe contener un archivo multipart no vacío.");
+  }
+  return next();
+}
+
+module.exports = {
+  validateRouteId,
+  validateQuery,
+  validateJsonBody,
+  validateMultipartBody
+};
