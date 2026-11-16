@@ -6,7 +6,9 @@
   "scripts": {
     "test": "node --test",
     "start": "node src/server.js",
-    "dev": "node --env-file=.env --watch src/server.js"
+    "start:cluster": "node src/server.cluster.js",
+    "dev": "node --env-file=.env --watch src/server.js",
+    "dev:cluster": "node --env-file=.env --watch src/server.cluster.js"
   },
   "repository": {
     "type": "git",

@@ -13,8 +13,7 @@ services:
       - "5062:5062"
 
     environment:
-      NODE_ENV: development
-      # NODE_ENV=production
+      NODE_ENV: production
       PORT: 5062
 
     restart: unless-stopped

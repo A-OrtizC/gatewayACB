@@ -20,4 +20,4 @@ ENV NODE_ENV=production
 EXPOSE 5062
 
 # Iniciar el API Gateway
-CMD ["node", "src/server.js"]
+CMD ["node", "src/server.cluster.js"]
