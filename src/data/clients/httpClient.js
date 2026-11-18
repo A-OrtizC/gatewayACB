@@ -10,6 +10,8 @@ class HttpError extends Error {
     this.body = body;
     this.code = extra.code || null;
     this.durationMs = extra.durationMs || null;
+    this.upstreamCode = extra.upstreamCode || null;
+    this.upstreamHeaders = extra.upstreamHeaders || null;
   }
 }
 
@@ -35,6 +37,30 @@ function getTimeoutForService(service) {
     return timeouts.defaults.call;
   }
   return 10000;
+}
+
+// Go responde los errores como {"error":"position_expired"}. Solo se expone
+// como codigo del gateway para GPS; los demas servicios conservan su formato.
+function extractUpstreamCode(service, body) {
+  if (service !== "gps" || !body || typeof body !== "object") {
+    return null;
+  }
+  const candidate = typeof body.error === "string" ? body.error : body.code;
+  if (typeof candidate !== "string" || !/^[a-z0-9_]+$/.test(candidate)) {
+    return null;
+  }
+  return candidate;
+}
+
+function pickUpstreamHeaders(headers) {
+  const result = {};
+  for (const name of ["Retry-After", "WWW-Authenticate"]) {
+    const value = headers.get(name);
+    if (value) {
+      result[name] = value;
+    }
+  }
+  return Object.keys(result).length > 0 ? result : null;
 }
 
 async function request(service, path, options = {}) {
@@ -67,7 +93,12 @@ async function request(service, path, options = {}) {
       headers["Content-Type"] = "application/json";
     }
 
-    const { timeout: _timeout, query: _query, ...requestOptions } = options;
+    const {
+      timeout: _timeout,
+      query: _query,
+      fullResponse: _fullResponse,
+      ...requestOptions
+    } = options;
     const fetchOptions = {
       ...requestOptions,
       method: options.method || "GET",
@@ -106,7 +137,15 @@ async function request(service, path, options = {}) {
       const message =
         (body && typeof body === "object" && body.message) ||
         `Error HTTP ${res.status} al llamar a ${service}`;
-      throw new HttpError(message, res.status, service, body, { durationMs });
+      throw new HttpError(message, res.status, service, body, {
+        durationMs,
+        upstreamCode: extractUpstreamCode(service, body),
+        upstreamHeaders: pickUpstreamHeaders(res.headers),
+      });
+    }
+
+    if (options.fullResponse) {
+      return { body, status: res.status, headers: res.headers };
     }
 
     return body;

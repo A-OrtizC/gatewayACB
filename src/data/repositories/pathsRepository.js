@@ -1,4 +1,4 @@
-const { get, post, put, patch, del } = require("../clients/httpClient");
+const { get, post } = require("../clients/httpClient");
 
 const BASE_URL = "/api/v1";
 
@@ -6,7 +6,7 @@ const PathsRepository = {
   findAllRoutes: (query = {}, headers = {}) => {
     return get("paths", `${BASE_URL}/routes`, { headers, query });
   },
-  
+
   searchRoutes: (query = {}, headers = {}) => {
     return get("paths", `${BASE_URL}/routes/search`, { headers, query });
   },
@@ -20,7 +20,6 @@ const PathsRepository = {
   },
 
   findFirstMettingPoint: (id, headers = {}) => {
-
     return get("paths", `${BASE_URL}/routes/${id}/first-meeting-point`, { headers });
   },
 
@@ -34,6 +33,12 @@ const PathsRepository = {
 
   notifyStatus: (data, headers = {}) => {
     return post("paths", `${BASE_URL}/status/notify`, data, { headers });
+  },
+
+  validateFirstMeetingPoint: (id, data, headers = {}) => {
+    return post("paths", `${BASE_URL}/routes/${id}/first-meeting-point/validate`, data, {
+      headers,
+    });
   },
 };
 

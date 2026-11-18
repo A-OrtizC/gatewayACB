@@ -2,7 +2,8 @@ const express = require("express");
 const {
   validateQuery,
   validateRouteId,
-  validateMultipartBody
+  validateJsonBody,
+  validateMultipartBody,
 } = require("../middlewares/validation");
 
 function createPathsRouter(controller) {
@@ -12,6 +13,12 @@ function createPathsRouter(controller) {
   router.get("/search", validateQuery, controller.search);
   router.get("/:id/overview", validateRouteId, controller.getOverview);
   router.get("/:id/first-meeting-point", validateRouteId, controller.getFirstMeetingPoint);
+  router.post(
+    "/:id/first-meeting-point/validate",
+    validateRouteId,
+    validateJsonBody,
+    controller.validateFirstMeetingPoint
+  );
   router.get("/:id/endpoints", validateRouteId, controller.getEndpoints);
   router.get("/:id", validateRouteId, controller.findById);
   router.post(
@@ -30,4 +37,14 @@ function createMeetingPointsRouter(controller) {
   return router;
 }
 
-module.exports = { createPathsRouter, createMeetingPointsRouter };
+function createStatusRouter(controller) {
+  const router = express.Router();
+  router.post("/notify", validateJsonBody, controller.notifyStatus);
+  return router;
+}
+
+module.exports = {
+  createPathsRouter,
+  createMeetingPointsRouter,
+  createStatusRouter,
+};

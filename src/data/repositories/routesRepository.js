@@ -1,33 +1,32 @@
-const { get, post, put, patch, del } = require("../clients/httpClient");
-const pathsMock = require("../mocks/paths.mock");
+const { get, post, put, delete: del } = require("../clients/httpClient");
 
 const BASE_URL = "/api/v1";
 
 const RoutesRepository = {
-  // MettingPoint methods
+  // Meeting point methods
   findMettingPointsForRoute: (routeId, headers = {}) => {
     return get("routes", `${BASE_URL}/routes/${routeId}/meeting-points`, { headers });
   },
-  
+
   findMettingPointById: (meetingPointId, headers = {}) => {
     return get("routes", `${BASE_URL}/meeting-points/${meetingPointId}`, { headers });
   },
 
   createMettingPointsForRoute: (routeId, data, headers = {}) => {
-    return post("routes", `${BASE_URL}/routes/${routeId}/meeting-points`, { headers, data });
+    return post("routes", `${BASE_URL}/routes/${routeId}/meeting-points`, data, { headers });
   },
 
   updateMettingPointById: (meetingPointId, data, headers = {}) => {
-    return put("routes", `${BASE_URL}/meeting-points/${meetingPointId}`, { headers, data });
+    return put("routes", `${BASE_URL}/meeting-points/${meetingPointId}`, data, { headers });
   },
 
   deleteMettingPointById: (meetingPointId, headers = {}) => {
-    return del("routes", `${BASE_URL}/${routeId}/meeting-points/${meetingPointId}`, { headers });
+    return del("routes", `${BASE_URL}/meeting-points/${meetingPointId}`, { headers });
   },
 
-  // Routes methods
+  // Route methods
   listRoutes: (schoolId, zone, headers = {}) => {
-    return get("routes", `${BASE_URL}/routes`, { headers, params: { schoolId, zone } });
+    return get("routes", `${BASE_URL}/routes`, { headers, query: { schoolId, zone } });
   },
 
   findRouteById: (id, headers = {}) => {
@@ -35,11 +34,11 @@ const RoutesRepository = {
   },
 
   createRoute: (data, headers = {}) => {
-    return post("routes", `${BASE_URL}/routes`, { headers, data });
+    return post("routes", `${BASE_URL}/routes`, data, { headers });
   },
 
   updateRouteById: (id, data, headers = {}) => {
-    return put("routes", `${BASE_URL}/routes/${id}`, { headers, data });
+    return put("routes", `${BASE_URL}/routes/${id}`, data, { headers });
   },
 
   deleteRouteById: (id, headers = {}) => {
@@ -47,61 +46,64 @@ const RoutesRepository = {
   },
 
   assignGuidesToRoute: (routeId, data, headers = {}) => {
-    return put("routes", `${BASE_URL}/routes/${routeId}/guides`, { headers, data });
+    return put("routes", `${BASE_URL}/routes/${routeId}/guides`, data, { headers });
   },
 
-  // Shool methods
+  // School methods
   listSchools: (zone, headers = {}) => {
-    return get("schools", `${BASE_URL}/schools`, { headers, params: { zone } });
+    return get("routes", `${BASE_URL}/schools`, { headers, query: { zone } });
   },
 
   findSchoolById: (id, headers = {}) => {
-    return get("schools", `${BASE_URL}/schools/${id}`, { headers });
+    return get("routes", `${BASE_URL}/schools/${id}`, { headers });
   },
 
   createSchool: (data, headers = {}) => {
-    return post("schools", `${BASE_URL}/schools`, { headers, data });
+    return post("routes", `${BASE_URL}/schools`, data, { headers });
   },
 
   updateSchoolById: (id, data, headers = {}) => {
-    return put("schools", `${BASE_URL}/schools/${id}`, { headers, data });
+    return put("routes", `${BASE_URL}/schools/${id}`, data, { headers });
   },
 
   deactivateSchoolById: (id, headers = {}) => {
-    return del("schools", `${BASE_URL}/schools/${id}`, { headers });
+    return del("routes", `${BASE_URL}/schools/${id}`, { headers });
   },
 
-  // student methods
+  // Student methods
   listStudentsByRoute: (routeId, headers = {}) => {
-    return get("students", `${BASE_URL}/routes/${routeId}/students`, { headers });
+    return get("routes", `${BASE_URL}/routes/${routeId}/students`, { headers });
   },
 
   assignStudentToRoute: (routeId, data, headers = {}) => {
-    return post("students", `${BASE_URL}/routes/${routeId}/students`, { headers, data });
+    return post("routes", `${BASE_URL}/routes/${routeId}/students`, data, { headers });
   },
 
   findStudentById: (id, headers = {}) => {
-    return get("students", `${BASE_URL}/students/${id}`, { headers });
+    return get("routes", `${BASE_URL}/students/${id}`, { headers });
   },
 
   updateStudentById: (id, data, headers = {}) => {
-    return put("students", `${BASE_URL}/students/${id}`, { headers, data });
+    return put("routes", `${BASE_URL}/students/${id}`, data, { headers });
   },
 
   deactivateStudentById: (id, headers = {}) => {
-    return del("students", `${BASE_URL}/students/${id}`, { headers });
+    return del("routes", `${BASE_URL}/students/${id}`, { headers });
   },
 
   assignMeetingPointsToStudent: (id, data, headers = {}) => {
-    return put("students", `${BASE_URL}/students/${id}/meeting-points`, { headers, data });
+    return put("routes", `${BASE_URL}/students/${id}/meeting-points`, data, { headers });
   },
 
   getMeetingPointsOfStudent: (id, headers = {}) => {
-    return get("students", `${BASE_URL}/students/${id}/meeting-points`, { headers });
+    return get("routes", `${BASE_URL}/students/${id}/meeting-points`, { headers });
   },
 
   getRosterAtMeetingPoint: (meetingPointId, shift, headers = {}) => {
-    return get("students", `${BASE_URL}/meeting-points/${meetingPointId}/students`, { headers, params: { shift } });
+    return get("routes", `${BASE_URL}/meeting-points/${meetingPointId}/students`, {
+      headers,
+      query: { shift },
+    });
   },
 };
 

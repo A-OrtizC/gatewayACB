@@ -57,6 +57,7 @@ function normalizeMsError(err, options = {}) {
   }
 
   if (err.name === "HttpError") {
+    const normalized = (() => {
     const service = err.service || null;
     const status = err.status || null;
     const body = err.body;
@@ -213,6 +214,11 @@ function normalizeMsError(err, options = {}) {
       correlationId,
       raw: body,
     });
+    })();
+
+    normalized.upstreamCode = err.upstreamCode || null;
+    normalized.upstreamHeaders = err.upstreamHeaders || null;
+    return normalized;
   }
 
   return new CommunicationError({

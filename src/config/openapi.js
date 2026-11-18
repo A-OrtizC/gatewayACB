@@ -42,6 +42,25 @@ const openapi = {
     {
       name: "MeetingPoints",
       description: "Consulta de puntos de encuentro geográficos"
+    },
+    {
+      name: "Status",
+      description: "Notificación de estado de rutas y validación geográfica"
+    },
+    {
+      name: "Operations",
+      description:
+        "Operación de viajes, asistencia de estudiantes, eventos y faltas de guías"
+    },
+    {
+      name: "AdminRoutes",
+      description:
+        "Administración de rutas, colegios, estudiantes y puntos de encuentro"
+    },
+    {
+      name: "Tracking",
+      description:
+        "Sesiones de seguimiento GPS gestionadas por el servicio Go acb_gps_lo"
     }
   ],
   paths: {
@@ -713,6 +732,1896 @@ const openapi = {
           504: { $ref: "#/components/responses/UpstreamTimeout" }
         }
       }
+    },
+    "/routes/{id}/first-meeting-point/validate": {
+      post: {
+        tags: ["Status"],
+        summary: "Validar una ubicación contra el primer punto de encuentro",
+        description:
+          "Reenvía la ubicación al servicio de paths para comprobar si está dentro del radio aceptado del primer punto de encuentro de la ruta.",
+        operationId: "validateFirstMeetingPoint",
+        security: [],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/RouteId" }
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                $ref: "#/components/schemas/GeographicValidationRequest"
+              }
+            }
+          }
+        },
+        responses: {
+          200: {
+            description: "Resultado de la validación geográfica.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/GeographicValidation" }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          404: { $ref: "#/components/responses/NotFound" },
+          409: { $ref: "#/components/responses/Conflict" },
+          422: { $ref: "#/components/responses/UnprocessableEntity" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/status/notify": {
+      post: {
+        tags: ["Status"],
+        summary: "Notificar el estado de una ruta",
+        description:
+          "Reenvía al servicio de paths la notificación de estado operativo de una ruta.",
+        operationId: "notifyRouteStatus",
+        security: [],
+        parameters: [{ $ref: "#/components/parameters/CorrelationId" }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/StatusNotifyRequest" }
+            }
+          }
+        },
+        responses: {
+          201: {
+            description: "Notificación registrada.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/StatusNotifyResponse" }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          422: { $ref: "#/components/responses/UnprocessableEntity" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/trips": {
+      post: {
+        tags: ["Operations"],
+        summary: "Crear un viaje",
+        description:
+          "Crea un viaje para una ruta y fecha. El servicio de operaciones devuelve 201.",
+        operationId: "createTrip",
+        security: [{ bearerAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/CorrelationId" }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/TripRequest" }
+            }
+          }
+        },
+        responses: {
+          201: {
+            description: "Viaje creado.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Trip" }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          409: { $ref: "#/components/responses/Conflict" },
+          422: { $ref: "#/components/responses/UnprocessableEntity" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/trips/{tripId}": {
+      get: {
+        tags: ["Operations"],
+        summary: "Consultar un viaje",
+        operationId: "getTrip",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/TripId" }
+        ],
+        responses: {
+          200: {
+            description: "Viaje encontrado.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Trip" }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/trips/{tripId}/overview": {
+      get: {
+        tags: ["Operations"],
+        summary: "Consultar el resumen operativo de un viaje",
+        description:
+          "Compone en una sola respuesta el viaje, sus guías, la asistencia de estudiantes y los eventos.",
+        operationId: "getTripOverview",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/TripId" }
+        ],
+        responses: {
+          200: {
+            description: "Resumen operativo del viaje.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/TripOverview" }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/trips/{tripId}/guides": {
+      get: {
+        tags: ["Operations"],
+        summary: "Listar los guías asignados a un viaje",
+        operationId: "listTripGuides",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/TripId" }
+        ],
+        responses: {
+          200: {
+            description: "Guías del viaje.",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/TripGuide" }
+                }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/trips/{tripId}/guides/{tripGuideId}/replacement": {
+      put: {
+        tags: ["Operations"],
+        summary: "Reemplazar un guía del viaje",
+        operationId: "replaceTripGuide",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/TripId" },
+          { $ref: "#/components/parameters/TripGuideId" }
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                $ref: "#/components/schemas/TripGuideReplacementRequest"
+              }
+            }
+          }
+        },
+        responses: {
+          200: {
+            description: "Guía reemplazado.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/TripGuide" }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          409: { $ref: "#/components/responses/Conflict" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/trips/by-route/{routeId}": {
+      get: {
+        tags: ["Operations"],
+        summary: "Consultar el viaje de una ruta en una fecha",
+        operationId: "getTripByRouteAndDate",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/OperationRouteId" },
+          { $ref: "#/components/parameters/TripDate" }
+        ],
+        responses: {
+          200: {
+            description: "Viaje de la ruta en la fecha indicada.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Trip" }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/trips/{tripId}/start": {
+      post: {
+        tags: ["Operations"],
+        summary: "Iniciar un viaje",
+        operationId: "startTrip",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/TripId" }
+        ],
+        requestBody: {
+          required: false,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/TripLifecycleRequest" }
+            }
+          }
+        },
+        responses: {
+          200: {
+            description: "Viaje iniciado.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Trip" }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          409: { $ref: "#/components/responses/Conflict" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/trips/{tripId}/finish": {
+      post: {
+        tags: ["Operations"],
+        summary: "Finalizar un viaje",
+        description:
+          "El gateway no reenvía cuerpo. El servicio de operaciones completa el viaje.",
+        operationId: "finishTrip",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/TripId" }
+        ],
+        responses: {
+          200: {
+            description: "Viaje finalizado.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Trip" }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          409: { $ref: "#/components/responses/Conflict" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/trips/{tripId}/events": {
+      get: {
+        tags: ["Operations"],
+        summary: "Listar los eventos de un viaje",
+        operationId: "listTripEvents",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/TripId" }
+        ],
+        responses: {
+          200: {
+            description: "Eventos del viaje.",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/TripEvent" }
+                }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      },
+      post: {
+        tags: ["Operations"],
+        summary: "Registrar un evento de viaje",
+        operationId: "registerTripEvent",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/TripId" }
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/TripEventRequest" }
+            }
+          }
+        },
+        responses: {
+          201: {
+            description: "Evento registrado.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/TripEvent" }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          409: { $ref: "#/components/responses/Conflict" },
+          422: { $ref: "#/components/responses/UnprocessableEntity" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/trips/{tripId}/attendance": {
+      get: {
+        tags: ["Operations"],
+        summary: "Listar la asistencia de estudiantes del viaje",
+        operationId: "listStudentAttendance",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/TripId" }
+        ],
+        responses: {
+          200: {
+            description: "Asistencia registrada.",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/StudentAttendance" }
+                }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/trips/{tripId}/attendance/roster": {
+      post: {
+        tags: ["Operations"],
+        summary: "Inicializar el roster de asistencia",
+        description:
+          "El cuerpo es un arreglo JSON con las entradas del roster. El servicio de operaciones devuelve 201.",
+        operationId: "initializeAttendanceRoster",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/TripId" }
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "array",
+                items: {
+                  $ref: "#/components/schemas/AttendanceRosterEntry"
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          201: {
+            description: "Roster inicializado.",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/StudentAttendance" }
+                }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          409: { $ref: "#/components/responses/Conflict" },
+          422: { $ref: "#/components/responses/UnprocessableEntity" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/trips/{tripId}/attendance/{studentId}": {
+      put: {
+        tags: ["Operations"],
+        summary: "Registrar o actualizar la asistencia de un estudiante",
+        operationId: "registerOrUpdateAttendance",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/TripId" },
+          { $ref: "#/components/parameters/AttendanceStudentId" }
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/AttendanceCommand" }
+            }
+          }
+        },
+        responses: {
+          200: {
+            description: "Asistencia registrada.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/StudentAttendance" }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          409: { $ref: "#/components/responses/Conflict" },
+          422: { $ref: "#/components/responses/UnprocessableEntity" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/trip-guides/{tripGuideId}/check-ins": {
+      get: {
+        tags: ["Operations"],
+        summary: "Consultar los intentos de check-in de un guía de viaje",
+        description:
+          "Expone únicamente la auditoría de solo lectura. El endpoint interno de escritura no está publicado por el gateway.",
+        operationId: "listGuideCheckIns",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/TripGuideId" }
+        ],
+        responses: {
+          200: {
+            description: "Intentos de check-in del guía de viaje.",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/GuideCheckInAttempt" }
+                }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/guide-faults/guides/{guideId}/cycles": {
+      get: {
+        tags: ["Operations"],
+        summary: "Listar los ciclos de faltas de un guía",
+        operationId: "listGuideFaultCycles",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/GuideIdPath" }
+        ],
+        responses: {
+          200: {
+            description: "Ciclos de faltas del guía.",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/GuideFaultCycle" }
+                }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/guide-faults/cycles/{cycleId}/minor": {
+      get: {
+        tags: ["Operations"],
+        summary: "Listar las faltas leves de un ciclo",
+        operationId: "listMinorFaults",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/CycleId" }
+        ],
+        responses: {
+          200: {
+            description: "Faltas leves del ciclo.",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/MinorFault" }
+                }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/guide-faults/major/{majorFaultId}": {
+      get: {
+        tags: ["Operations"],
+        summary: "Consultar una falta grave",
+        operationId: "getMajorFault",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/MajorFaultId" }
+        ],
+        responses: {
+          200: {
+            description: "Falta grave encontrada.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/MajorFault" }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/guide-faults/minor/{minorFaultId}/notified": {
+      put: {
+        tags: ["Operations"],
+        summary: "Marcar una falta leve como notificada",
+        operationId: "markMinorFaultNotified",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/MinorFaultId" }
+        ],
+        responses: {
+          200: {
+            description: "Falta leve notificada.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/MinorFault" }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          409: { $ref: "#/components/responses/Conflict" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/guide-faults/major/{majorFaultId}/notified": {
+      put: {
+        tags: ["Operations"],
+        summary: "Marcar una falta grave como notificada",
+        operationId: "markMajorFaultNotified",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/MajorFaultId" }
+        ],
+        responses: {
+          200: {
+            description: "Falta grave notificada.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/MajorFault" }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          409: { $ref: "#/components/responses/Conflict" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/guide-faults/major/{majorFaultId}/minuted": {
+      put: {
+        tags: ["Operations"],
+        summary: "Marcar una falta grave como minuciada",
+        operationId: "markMajorFaultMinuted",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/MajorFaultId" }
+        ],
+        responses: {
+          204: { description: "Falta grave minuciada sin contenido." },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          409: { $ref: "#/components/responses/Conflict" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/admin/routes": {
+      get: {
+        tags: ["AdminRoutes"],
+        summary: "Listar rutas administrativas",
+        operationId: "adminListRoutes",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/AdminSchoolIdQuery" },
+          { $ref: "#/components/parameters/AdminZone" }
+        ],
+        responses: {
+          200: {
+            description: "Rutas administrativas.",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/AdminRoute" }
+                }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      },
+      post: {
+        tags: ["AdminRoutes"],
+        summary: "Crear una ruta administrativa",
+        operationId: "adminCreateRoute",
+        security: [{ bearerAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/CorrelationId" }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/AdminRouteRequest" }
+            }
+          }
+        },
+        responses: {
+          201: {
+            description: "Ruta creada.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/AdminRoute" }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          409: { $ref: "#/components/responses/Conflict" },
+          422: { $ref: "#/components/responses/UnprocessableEntity" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/admin/routes/{id}": {
+      get: {
+        tags: ["AdminRoutes"],
+        summary: "Consultar una ruta administrativa",
+        operationId: "adminGetRoute",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/AdminId" }
+        ],
+        responses: {
+          200: {
+            description: "Ruta encontrada.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/AdminRoute" }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      },
+      put: {
+        tags: ["AdminRoutes"],
+        summary: "Actualizar una ruta administrativa",
+        operationId: "adminUpdateRoute",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/AdminId" }
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/AdminRouteRequest" }
+            }
+          }
+        },
+        responses: {
+          200: {
+            description: "Ruta actualizada.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/AdminRoute" }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          409: { $ref: "#/components/responses/Conflict" },
+          422: { $ref: "#/components/responses/UnprocessableEntity" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      },
+      delete: {
+        tags: ["AdminRoutes"],
+        summary: "Desactivar una ruta administrativa",
+        operationId: "adminDeactivateRoute",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/AdminId" }
+        ],
+        responses: {
+          204: { description: "Ruta desactivada sin contenido." },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/admin/routes/{id}/overview": {
+      get: {
+        tags: ["AdminRoutes"],
+        summary: "Consultar el resumen administrativo de una ruta",
+        description:
+          "Compone la ruta, sus puntos de encuentro y sus estudiantes.",
+        operationId: "adminGetRouteOverview",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/AdminId" }
+        ],
+        responses: {
+          200: {
+            description: "Resumen administrativo de la ruta.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/AdminRouteOverview" }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/admin/routes/{id}/guides": {
+      put: {
+        tags: ["AdminRoutes"],
+        summary: "Asignar guías a una ruta",
+        operationId: "adminAssignGuidesToRoute",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/AdminId" }
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                $ref: "#/components/schemas/AssignGuidesToRouteRequest"
+              }
+            }
+          }
+        },
+        responses: {
+          200: {
+            description: "Guías asignados.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/AdminRoute" }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          409: { $ref: "#/components/responses/Conflict" },
+          422: { $ref: "#/components/responses/UnprocessableEntity" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/admin/routes/{routeId}/meeting-points": {
+      get: {
+        tags: ["AdminRoutes"],
+        summary: "Listar los puntos de encuentro de una ruta",
+        operationId: "adminListMeetingPointsForRoute",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/AdminRouteId" }
+        ],
+        responses: {
+          200: {
+            description: "Puntos de encuentro de la ruta.",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/AdminMeetingPoint" }
+                }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      },
+      post: {
+        tags: ["AdminRoutes"],
+        summary: "Crear un punto de encuentro para una ruta",
+        operationId: "adminCreateMeetingPoint",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/AdminRouteId" }
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/AdminMeetingPointRequest" }
+            }
+          }
+        },
+        responses: {
+          201: {
+            description: "Punto de encuentro creado.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/AdminMeetingPoint" }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          409: { $ref: "#/components/responses/Conflict" },
+          422: { $ref: "#/components/responses/UnprocessableEntity" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/admin/meeting-points/{id}": {
+      get: {
+        tags: ["AdminRoutes"],
+        summary: "Consultar un punto de encuentro",
+        operationId: "adminGetMeetingPoint",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/AdminId" }
+        ],
+        responses: {
+          200: {
+            description: "Punto de encuentro encontrado.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/AdminMeetingPoint" }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      },
+      put: {
+        tags: ["AdminRoutes"],
+        summary: "Actualizar un punto de encuentro",
+        operationId: "adminUpdateMeetingPoint",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/AdminId" }
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/AdminMeetingPointRequest" }
+            }
+          }
+        },
+        responses: {
+          200: {
+            description: "Punto de encuentro actualizado.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/AdminMeetingPoint" }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          409: { $ref: "#/components/responses/Conflict" },
+          422: { $ref: "#/components/responses/UnprocessableEntity" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      },
+      delete: {
+        tags: ["AdminRoutes"],
+        summary: "Eliminar un punto de encuentro",
+        operationId: "adminDeleteMeetingPoint",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/AdminId" }
+        ],
+        responses: {
+          204: { description: "Punto de encuentro eliminado sin contenido." },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          409: { $ref: "#/components/responses/Conflict" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/admin/meeting-points/{id}/students": {
+      get: {
+        tags: ["AdminRoutes"],
+        summary: "Consultar el llamado a lista en un punto de encuentro",
+        operationId: "adminGetRosterAtMeetingPoint",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/AdminId" },
+          { $ref: "#/components/parameters/Shift" }
+        ],
+        responses: {
+          200: {
+            description: "Estudiantes del punto de encuentro para la jornada.",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/AdminStudent" }
+                }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/admin/routes/{routeId}/students": {
+      get: {
+        tags: ["AdminRoutes"],
+        summary: "Listar los estudiantes de una ruta",
+        operationId: "adminListStudentsByRoute",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/AdminRouteId" }
+        ],
+        responses: {
+          200: {
+            description: "Estudiantes de la ruta.",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/AdminStudent" }
+                }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      },
+      post: {
+        tags: ["AdminRoutes"],
+        summary: "Asignar un estudiante a una ruta",
+        operationId: "adminAssignStudentToRoute",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/AdminRouteId" }
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/AdminStudentRequest" }
+            }
+          }
+        },
+        responses: {
+          201: {
+            description: "Estudiante asignado.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/AdminStudent" }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          409: { $ref: "#/components/responses/Conflict" },
+          422: { $ref: "#/components/responses/UnprocessableEntity" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/admin/students/{id}": {
+      get: {
+        tags: ["AdminRoutes"],
+        summary: "Consultar un estudiante",
+        operationId: "adminGetStudent",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/AdminId" }
+        ],
+        responses: {
+          200: {
+            description: "Estudiante encontrado.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/AdminStudent" }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      },
+      put: {
+        tags: ["AdminRoutes"],
+        summary: "Actualizar un estudiante",
+        operationId: "adminUpdateStudent",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/AdminId" }
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                $ref: "#/components/schemas/AdminStudentUpdateRequest"
+              }
+            }
+          }
+        },
+        responses: {
+          200: {
+            description: "Estudiante actualizado.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/AdminStudent" }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          409: { $ref: "#/components/responses/Conflict" },
+          422: { $ref: "#/components/responses/UnprocessableEntity" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      },
+      delete: {
+        tags: ["AdminRoutes"],
+        summary: "Desactivar un estudiante",
+        operationId: "adminDeactivateStudent",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/AdminId" }
+        ],
+        responses: {
+          204: { description: "Estudiante desactivado sin contenido." },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/admin/students/{id}/meeting-points": {
+      get: {
+        tags: ["AdminRoutes"],
+        summary: "Consultar los puntos de encuentro de un estudiante",
+        operationId: "adminGetStudentMeetingPoints",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/AdminId" }
+        ],
+        responses: {
+          200: {
+            description: "Puntos de encuentro del estudiante por jornada.",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: {
+                    $ref: "#/components/schemas/StudentMeetingPoint"
+                  }
+                }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      },
+      put: {
+        tags: ["AdminRoutes"],
+        summary: "Asignar los puntos de encuentro de un estudiante",
+        operationId: "adminAssignStudentMeetingPoints",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/AdminId" }
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                $ref: "#/components/schemas/AssignStudentMeetingPointsRequest"
+              }
+            }
+          }
+        },
+        responses: {
+          200: {
+            description: "Puntos de encuentro asignados.",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: {
+                    $ref: "#/components/schemas/StudentMeetingPoint"
+                  }
+                }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          409: { $ref: "#/components/responses/Conflict" },
+          422: { $ref: "#/components/responses/UnprocessableEntity" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/admin/schools": {
+      get: {
+        tags: ["AdminRoutes"],
+        summary: "Listar colegios",
+        operationId: "adminListSchools",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/AdminZone" }
+        ],
+        responses: {
+          200: {
+            description: "Colegios administrativos.",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/AdminSchool" }
+                }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      },
+      post: {
+        tags: ["AdminRoutes"],
+        summary: "Crear un colegio",
+        operationId: "adminCreateSchool",
+        security: [{ bearerAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/CorrelationId" }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/AdminSchoolRequest" }
+            }
+          }
+        },
+        responses: {
+          201: {
+            description: "Colegio creado.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/AdminSchool" }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          409: { $ref: "#/components/responses/Conflict" },
+          422: { $ref: "#/components/responses/UnprocessableEntity" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/admin/schools/{id}": {
+      get: {
+        tags: ["AdminRoutes"],
+        summary: "Consultar un colegio",
+        operationId: "adminGetSchool",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/AdminId" }
+        ],
+        responses: {
+          200: {
+            description: "Colegio encontrado.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/AdminSchool" }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      },
+      put: {
+        tags: ["AdminRoutes"],
+        summary: "Actualizar un colegio",
+        operationId: "adminUpdateSchool",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/AdminId" }
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/AdminSchoolRequest" }
+            }
+          }
+        },
+        responses: {
+          200: {
+            description: "Colegio actualizado.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/AdminSchool" }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          409: { $ref: "#/components/responses/Conflict" },
+          422: { $ref: "#/components/responses/UnprocessableEntity" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      },
+      delete: {
+        tags: ["AdminRoutes"],
+        summary: "Desactivar un colegio",
+        operationId: "adminDeactivateSchool",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/AdminId" }
+        ],
+        responses: {
+          204: { description: "Colegio desactivado sin contenido." },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/tracking-sessions": {
+      post: {
+        tags: ["Tracking"],
+        summary: "Crear una sesión de seguimiento",
+        description:
+          "Reenvía la creación al servicio Go. Devuelve 201 cuando la sesión es nueva y 200 cuando el Idempotency-Key ya fue procesado (replay).",
+        operationId: "createTrackingSession",
+        security: [],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/IdempotencyKey" }
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                $ref: "#/components/schemas/TrackingSessionCreateRequest"
+              }
+            }
+          }
+        },
+        responses: {
+          201: {
+            description: "Sesión de seguimiento creada.",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/TrackingSessionCreatedResponse"
+                }
+              }
+            }
+          },
+          200: {
+            description:
+              "Replay idempotente: la sesión ya había sido creada con esa Idempotency-Key.",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/TrackingSessionCreatedResponse"
+                }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          409: {
+            description: "La Idempotency-Key entra en conflicto con otra sesión.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          422: { $ref: "#/components/responses/UnprocessableEntity" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          503: {
+            description:
+              "El servicio GPS no está disponible temporalmente (incluye Retry-After).",
+            headers: {
+              "Retry-After": {
+                description: "Segundos recomendados antes de reintentar.",
+                schema: { type: "string", example: "1" }
+              }
+            },
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/tracking-sessions/{trackingId}": {
+      get: {
+        tags: ["Tracking"],
+        summary: "Consultar el estado de una sesión de seguimiento",
+        operationId: "getTrackingSession",
+        security: [],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/TrackingId" }
+        ],
+        responses: {
+          200: {
+            description: "Sesión de seguimiento encontrada.",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/TrackingSessionStatusResponse"
+                }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: {
+            description:
+              "Credencial de servicio inválida o ausente (incluye WWW-Authenticate).",
+            headers: {
+              "WWW-Authenticate": {
+                description: "Esquema de autenticación exigido por el GPS.",
+                schema: { type: "string", example: "Bearer" }
+              }
+            },
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/tracking-sessions/{trackingId}/control": {
+      get: {
+        tags: ["Tracking"],
+        summary: "Consultar el control de una sesión de seguimiento",
+        operationId: "getTrackingSessionControl",
+        security: [],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/TrackingId" }
+        ],
+        responses: {
+          200: {
+            description: "Control de la sesión.",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/TrackingSessionControlResponse"
+                }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/tracking-sessions/{trackingId}/positions": {
+      get: {
+        tags: ["Tracking"],
+        summary: "Listar las posiciones de una sesión de seguimiento",
+        description:
+          "Paginación por secuencia. El servicio Go usa limit=50 por defecto y no admite más de 100.",
+        operationId: "listTrackingSessionPositions",
+        security: [],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/TrackingId" },
+          { $ref: "#/components/parameters/AfterSequence" },
+          { $ref: "#/components/parameters/PositionsLimit" }
+        ],
+        responses: {
+          200: {
+            description: "Página de posiciones.",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/TrackingPositionsResponse"
+                }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          422: { $ref: "#/components/responses/UnprocessableEntity" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/tracking-sessions/{trackingId}/latest-position": {
+      get: {
+        tags: ["Tracking"],
+        summary: "Consultar la última posición de una sesión",
+        description:
+          "Devuelve 204 si la sesión todavía no tiene observaciones y 410 si la última posición expiró.",
+        operationId: "getTrackingSessionLatestPosition",
+        security: [],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/TrackingId" }
+        ],
+        responses: {
+          200: {
+            description: "Última posición registrada.",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/TrackingLatestPositionResponse"
+                }
+              }
+            }
+          },
+          204: { description: "La sesión no tiene observaciones." },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          410: {
+            description: "La última posición expiró.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/tracking-sessions/{trackingId}/observations": {
+      post: {
+        tags: ["Tracking"],
+        summary: "Registrar una observación de posición",
+        description:
+          "Usa el Bearer de la sesión emitido en la creación y no el token interno. Devuelve 201 para una observación nueva y 200 para un replay.",
+        operationId: "registerTrackingObservation",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/TrackingId" }
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                $ref: "#/components/schemas/TrackingObservationRequest"
+              }
+            }
+          }
+        },
+        responses: {
+          201: {
+            description: "Observación aceptada.",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/TrackingObservationResponse"
+                }
+              }
+            }
+          },
+          200: {
+            description: "Observación repetida (replay idempotente).",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/TrackingObservationResponse"
+                }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: {
+            description:
+              "Credencial de sesión inválida, cerrada o inexistente (incluye WWW-Authenticate).",
+            headers: {
+              "WWW-Authenticate": {
+                description: "Esquema de autenticación exigido por el GPS.",
+                schema: { type: "string", example: "Bearer" }
+              }
+            },
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          409: {
+            description:
+              "Conflicto de secuencia o una observación obsoleta.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          413: {
+            description: "La observación supera el tamaño máximo permitido.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          415: {
+            description: "El contenido no es application/json.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          422: { $ref: "#/components/responses/UnprocessableEntity" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          503: {
+            description:
+              "Almacenamiento GPS no disponible temporalmente (incluye Retry-After).",
+            headers: {
+              "Retry-After": {
+                description: "Segundos recomendados antes de reintentar.",
+                schema: { type: "string", example: "1" }
+              }
+            },
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/tracking-sessions/{trackingId}/disable": {
+      patch: {
+        tags: ["Tracking"],
+        summary: "Deshabilitar una sesión de seguimiento",
+        operationId: "disableTrackingSession",
+        security: [],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/TrackingId" }
+        ],
+        responses: {
+          200: {
+            description: "Sesión deshabilitada.",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/TrackingSessionStatusResponse"
+                }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          409: { $ref: "#/components/responses/Conflict" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
+    },
+    "/tracking-sessions/{trackingId}/finish": {
+      post: {
+        tags: ["Tracking"],
+        summary: "Finalizar una sesión de seguimiento",
+        description:
+          "El servicio Go rechaza cualquier cuerpo; el gateway no envía ninguno.",
+        operationId: "finishTrackingSession",
+        security: [],
+        parameters: [
+          { $ref: "#/components/parameters/CorrelationId" },
+          { $ref: "#/components/parameters/TrackingId" }
+        ],
+        responses: {
+          200: {
+            description: "Sesión finalizada.",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/TrackingSessionStatusResponse"
+                }
+              }
+            }
+          },
+          400: { $ref: "#/components/responses/BadRequest" },
+          401: { $ref: "#/components/responses/Unauthorized" },
+          403: { $ref: "#/components/responses/Forbidden" },
+          404: { $ref: "#/components/responses/NotFound" },
+          409: { $ref: "#/components/responses/Conflict" },
+          502: { $ref: "#/components/responses/UpstreamError" },
+          504: { $ref: "#/components/responses/UpstreamTimeout" }
+        }
+      }
     }
   },
   components: {
@@ -817,6 +2726,169 @@ const openapi = {
         description: "Número de documento de la persona.",
         schema: { type: "string" },
         example: "1020304050"
+      },
+      TripId: {
+        name: "tripId",
+        in: "path",
+        required: true,
+        description: "Identificador numérico del viaje.",
+        schema: { type: "integer", format: "int64", minimum: 1 },
+        example: 12
+      },
+      TripGuideId: {
+        name: "tripGuideId",
+        in: "path",
+        required: true,
+        description: "Identificador numérico del guía dentro del viaje.",
+        schema: { type: "integer", format: "int64", minimum: 1 },
+        example: 7
+      },
+      AttendanceStudentId: {
+        name: "studentId",
+        in: "path",
+        required: true,
+        description: "Identificador numérico del estudiante.",
+        schema: { type: "integer", format: "int64", minimum: 1 },
+        example: 42
+      },
+      OperationRouteId: {
+        name: "routeId",
+        in: "path",
+        required: true,
+        description: "Identificador numérico de la ruta administrativa.",
+        schema: { type: "integer", format: "int64", minimum: 1 },
+        example: 3
+      },
+      TripDate: {
+        name: "date",
+        in: "query",
+        required: true,
+        description: "Fecha del viaje en formato ISO 8601 (YYYY-MM-DD).",
+        schema: { type: "string", format: "date" },
+        example: "2026-11-17"
+      },
+      GuideIdPath: {
+        name: "guideId",
+        in: "path",
+        required: true,
+        description: "Identificador numérico del guía.",
+        schema: { type: "integer", format: "int64", minimum: 1 },
+        example: 21
+      },
+      CycleId: {
+        name: "cycleId",
+        in: "path",
+        required: true,
+        description: "Identificador numérico del ciclo de faltas.",
+        schema: { type: "integer", format: "int64", minimum: 1 },
+        example: 5
+      },
+      MajorFaultId: {
+        name: "majorFaultId",
+        in: "path",
+        required: true,
+        description: "Identificador numérico de la falta grave.",
+        schema: { type: "integer", format: "int64", minimum: 1 },
+        example: 9
+      },
+      MinorFaultId: {
+        name: "minorFaultId",
+        in: "path",
+        required: true,
+        description: "Identificador numérico de la falta leve.",
+        schema: { type: "integer", format: "int64", minimum: 1 },
+        example: 10
+      },
+      AdminId: {
+        name: "id",
+        in: "path",
+        required: true,
+        description: "Identificador numérico del recurso administrativo.",
+        schema: { type: "integer", format: "int64", minimum: 1 },
+        example: 1
+      },
+      AdminRouteId: {
+        name: "routeId",
+        in: "path",
+        required: true,
+        description: "Identificador numérico de la ruta administrativa.",
+        schema: { type: "integer", format: "int64", minimum: 1 },
+        example: 3
+      },
+      AdminSchoolIdQuery: {
+        name: "schoolId",
+        in: "query",
+        required: false,
+        description: "Filtra las rutas por colegio.",
+        schema: { type: "integer", format: "int64", minimum: 1 }
+      },
+      AdminZone: {
+        name: "zone",
+        in: "query",
+        required: false,
+        description: "Filtra por zona geográfica.",
+        schema: { type: "string" },
+        example: "NORTE"
+      },
+      Shift: {
+        name: "shift",
+        in: "query",
+        required: true,
+        description: "Jornada del llamado a lista.",
+        schema: { type: "string" },
+        example: "MAÑANA"
+      },
+      TrackingId: {
+        name: "trackingId",
+        in: "path",
+        required: true,
+        description:
+          "Identificador opaco emitido por el servicio Go (base64url de 32 caracteres, hasta 256 bytes). El gateway no exige formato UUID.",
+        schema: {
+          type: "string",
+          minLength: 1,
+          maxLength: 256,
+          example: "3q2-7wV1z8Yk0pQr5sT6uA7bC8dE9fG0h"
+        }
+      },
+      IdempotencyKey: {
+        name: "Idempotency-Key",
+        in: "header",
+        required: true,
+        description:
+          "Clave de idempotencia de hasta 256 bytes. Obligatoria para crear una sesión de seguimiento.",
+        schema: {
+          type: "string",
+          minLength: 1,
+          maxLength: 256,
+          example: "trip-12-2026-11-17"
+        }
+      },
+      AfterSequence: {
+        name: "after_sequence",
+        in: "query",
+        required: false,
+        description: "Devuelve posiciones con secuencia estrictamente mayor.",
+        schema: {
+          type: "integer",
+          format: "int64",
+          minimum: 0,
+          maximum: 9007199254740991,
+          default: 0
+        }
+      },
+      PositionsLimit: {
+        name: "limit",
+        in: "query",
+        required: false,
+        description:
+          "Cantidad máxima de posiciones. El servicio Go usa 50 por defecto y admite hasta 100.",
+        schema: {
+          type: "integer",
+          minimum: 1,
+          maximum: 100,
+          default: 50
+        }
       }
     },
     responses: {
@@ -1524,6 +3596,638 @@ const openapi = {
               not_applicable: { type: "integer", minimum: 0, example: 1 }
             }
           }
+        }
+      },
+      StatusNotifyRequest: {
+        type: "object",
+        description: "Notificación de estado operativo de una ruta.",
+        additionalProperties: true,
+        properties: {
+          route_id: { type: "string", example: "64b7f0c2e1a2b3c4d5e6f7a8" },
+          status: { type: "string", example: "active" },
+          reason: { type: "string", nullable: true }
+        }
+      },
+      StatusNotifyResponse: {
+        type: "object",
+        additionalProperties: true,
+        properties: {
+          route_id: { type: "string", example: "64b7f0c2e1a2b3c4d5e6f7a8" },
+          status: { type: "string", example: "active" },
+          notified_at: {
+            type: "string",
+            format: "date-time",
+            nullable: true
+          }
+        }
+      },
+      GeographicValidationRequest: {
+        type: "object",
+        required: ["latitude", "longitude"],
+        properties: {
+          latitude: { type: "number", minimum: -90, maximum: 90, example: 4.711 },
+          longitude: {
+            type: "number",
+            minimum: -180,
+            maximum: 180,
+            example: -74.0721
+          },
+          accuracy_m: {
+            type: "number",
+            minimum: 0,
+            nullable: true,
+            example: 12.5
+          },
+          captured_at: {
+            type: "string",
+            format: "date-time",
+            nullable: true,
+            example: "2026-11-17T11:30:00Z"
+          }
+        }
+      },
+      GeographicValidation: {
+        type: "object",
+        additionalProperties: true,
+        properties: {
+          route_id: { type: "string", example: "64b7f0c2e1a2b3c4d5e6f7a8" },
+          meeting_point_id: {
+            type: "string",
+            example: "64b7f0c2e1a2b3c4d5e6f7a9"
+          },
+          status: {
+            type: "string",
+            example: "inside",
+            description: "Resultado de la validación geográfica."
+          },
+          distance_m: { type: "number", nullable: true, example: 18.4 }
+        }
+      },
+      TripRequest: {
+        type: "object",
+        required: ["routeId", "tripDate"],
+        properties: {
+          routeId: { type: "integer", format: "int64", minimum: 1 },
+          routeCode: { type: "string", maxLength: 4, example: "541" },
+          shiftCode: { type: "string", example: "541" },
+          tripDate: { type: "string", format: "date", example: "2026-11-17" },
+          schoolName: { type: "string", example: "Colegio Distrital" },
+          scheduledStart: {
+            type: "string",
+            example: "06:30:00",
+            description: "Hora local programada de inicio."
+          },
+          startPointId: { type: "integer", format: "int64", nullable: true },
+          startPointCode: { type: "string", nullable: true },
+          mainGuideId: { type: "integer", format: "int64", nullable: true },
+          mainGuideName: { type: "string", nullable: true },
+          supportGuideId: { type: "integer", format: "int64", nullable: true },
+          supportGuideName: { type: "string", nullable: true }
+        }
+      },
+      Trip: {
+        type: "object",
+        additionalProperties: true,
+        properties: {
+          id: { type: "integer", format: "int64", example: 12 },
+          routeId: { type: "integer", format: "int64", example: 3 },
+          tripDate: { type: "string", format: "date", example: "2026-11-17" },
+          status: { type: "string", example: "IN_PROGRESS" },
+          startedAt: { type: "string", format: "date-time", nullable: true },
+          finishedAt: { type: "string", format: "date-time", nullable: true }
+        }
+      },
+      TripGuide: {
+        type: "object",
+        additionalProperties: true,
+        properties: {
+          id: { type: "integer", format: "int64", example: 7 },
+          tripId: { type: "integer", format: "int64", example: 12 },
+          guideId: { type: "integer", format: "int64", example: 21 },
+          guideName: { type: "string", example: "Ana Pérez" },
+          primary: { type: "boolean", example: true },
+          status: { type: "string", example: "ASSIGNED" }
+        }
+      },
+      TripGuideReplacementRequest: {
+        type: "object",
+        required: ["replacementGuideId"],
+        properties: {
+          replacementGuideId: { type: "integer", format: "int64", minimum: 1 },
+          replacementGuideName: { type: "string", maxLength: 150 },
+          reason: { type: "string", maxLength: 500 }
+        }
+      },
+      TripLifecycleRequest: {
+        type: "object",
+        properties: {
+          occurredAt: {
+            type: "string",
+            format: "date-time",
+            example: "2026-11-17T11:30:00-05:00"
+          }
+        }
+      },
+      TripEventRequest: {
+        type: "object",
+        required: ["operationCode", "occurredAt"],
+        properties: {
+          operationCode: { type: "string", example: "START" },
+          occurredAt: { type: "string", format: "date-time" },
+          description: { type: "string", nullable: true },
+          latitude: { type: "number", nullable: true, example: 4.711 },
+          longitude: { type: "number", nullable: true, example: -74.0721 },
+          source: { type: "string", nullable: true, example: "GUIDE" },
+          sourceEventId: { type: "string", nullable: true }
+        }
+      },
+      TripEvent: {
+        type: "object",
+        additionalProperties: true,
+        properties: {
+          id: { type: "integer", format: "int64", example: 31 },
+          tripId: { type: "integer", format: "int64", example: 12 },
+          operationCode: { type: "string", example: "START" },
+          occurredAt: { type: "string", format: "date-time" },
+          reporterType: { type: "string", example: "GUIDE" }
+        }
+      },
+      AttendanceRosterEntry: {
+        type: "object",
+        required: ["studentId", "studentName"],
+        properties: {
+          studentId: { type: "integer", format: "int64", minimum: 1 },
+          studentName: { type: "string", maxLength: 150 }
+        }
+      },
+      AttendanceCommand: {
+        type: "object",
+        required: ["statusCode"],
+        properties: {
+          studentNameSnapshot: { type: "string", maxLength: 150 },
+          statusCode: { type: "string", example: "PRESENT" },
+          note: { type: "string", nullable: true },
+          accompanyingPersonName: { type: "string", nullable: true },
+          accompanyingPersonRelation: { type: "string", nullable: true }
+        }
+      },
+      StudentAttendance: {
+        type: "object",
+        additionalProperties: true,
+        properties: {
+          id: { type: "integer", format: "int64", example: 44 },
+          tripId: { type: "integer", format: "int64", example: 12 },
+          studentId: { type: "integer", format: "int64", example: 42 },
+          statusCode: { type: "string", example: "PRESENT" },
+          registeredAt: { type: "string", format: "date-time", nullable: true }
+        }
+      },
+      GuideCheckInAttempt: {
+        type: "object",
+        additionalProperties: true,
+        properties: {
+          id: { type: "integer", format: "int64", example: 81 },
+          tripGuideId: { type: "integer", format: "int64", example: 7 },
+          result: { type: "string", example: "ACCEPTED" },
+          attemptedAt: { type: "string", format: "date-time" }
+        }
+      },
+      GuideFaultCycle: {
+        type: "object",
+        additionalProperties: true,
+        properties: {
+          id: { type: "integer", format: "int64", example: 5 },
+          guideId: { type: "integer", format: "int64", example: 21 },
+          status: { type: "string", example: "OPEN" },
+          startedAt: { type: "string", format: "date-time" }
+        }
+      },
+      MinorFault: {
+        type: "object",
+        additionalProperties: true,
+        properties: {
+          id: { type: "integer", format: "int64", example: 10 },
+          cycleId: { type: "integer", format: "int64", example: 5 },
+          notified: { type: "boolean", example: false },
+          occurredAt: { type: "string", format: "date-time" }
+        }
+      },
+      MajorFault: {
+        type: "object",
+        additionalProperties: true,
+        properties: {
+          id: { type: "integer", format: "int64", example: 9 },
+          guideId: { type: "integer", format: "int64", example: 21 },
+          notified: { type: "boolean", example: false },
+          minuted: { type: "boolean", example: false },
+          occurredAt: { type: "string", format: "date-time" }
+        }
+      },
+      TripOverview: {
+        type: "object",
+        required: ["trip", "guides", "attendance", "events"],
+        properties: {
+          trip: { $ref: "#/components/schemas/Trip" },
+          guides: {
+            type: "array",
+            items: { $ref: "#/components/schemas/TripGuide" }
+          },
+          attendance: {
+            type: "array",
+            items: { $ref: "#/components/schemas/StudentAttendance" }
+          },
+          events: {
+            type: "array",
+            items: { $ref: "#/components/schemas/TripEvent" }
+          }
+        }
+      },
+      AdminRouteRequest: {
+        type: "object",
+        required: ["routeCode", "shiftCode", "schoolId", "scheduledStartTime"],
+        properties: {
+          routeCode: { type: "string", maxLength: 4, example: "541" },
+          shiftCode: {
+            type: "string",
+            enum: ["541", "542"],
+            example: "541"
+          },
+          description: { type: "string", maxLength: 2000, nullable: true },
+          schoolId: { type: "integer", format: "int64", minimum: 1 },
+          scheduledStartTime: {
+            type: "string",
+            example: "06:30:00",
+            description: "Hora local programada (LocalTime)."
+          }
+        }
+      },
+      AdminRoute: {
+        type: "object",
+        additionalProperties: true,
+        properties: {
+          id: { type: "integer", format: "int64", example: 3 },
+          routeCode: { type: "string", example: "541" },
+          shiftCode: { type: "string", example: "541" },
+          schoolId: { type: "integer", format: "int64", example: 2 },
+          active: { type: "boolean", example: true }
+        }
+      },
+      AdminRouteOverview: {
+        type: "object",
+        required: ["route", "meetingPoints", "students"],
+        properties: {
+          route: { $ref: "#/components/schemas/AdminRoute" },
+          meetingPoints: {
+            type: "array",
+            items: { $ref: "#/components/schemas/AdminMeetingPoint" }
+          },
+          students: {
+            type: "array",
+            items: { $ref: "#/components/schemas/AdminStudent" }
+          }
+        }
+      },
+      AssignGuidesToRouteRequest: {
+        type: "object",
+        required: ["guides"],
+        properties: {
+          guides: {
+            type: "array",
+            minItems: 1,
+            maxItems: 2,
+            items: {
+              type: "object",
+              required: ["guideId"],
+              properties: {
+                guideId: { type: "integer", format: "int64", minimum: 1 },
+                name: { type: "string", maxLength: 150 },
+                primary: { type: "boolean", example: true }
+              }
+            }
+          }
+        }
+      },
+      AdminMeetingPointRequest: {
+        type: "object",
+        required: [
+          "meetingPointCode",
+          "address",
+          "latitude",
+          "longitude"
+        ],
+        properties: {
+          meetingPointCode: { type: "string", maxLength: 4, example: "P01" },
+          address: { type: "string", maxLength: 45 },
+          distance: {
+            type: "integer",
+            minimum: 0,
+            nullable: true,
+            description: "Distancia en metros desde el inicio de la ruta."
+          },
+          latitude: { type: "number", minimum: -90, maximum: 90 },
+          longitude: { type: "number", minimum: -180, maximum: 180 }
+        }
+      },
+      AdminMeetingPoint: {
+        type: "object",
+        additionalProperties: true,
+        properties: {
+          id: { type: "integer", format: "int64", example: 8 },
+          meetingPointCode: { type: "string", example: "P01" },
+          address: { type: "string" },
+          distance: { type: "integer", nullable: true },
+          latitude: { type: "number" },
+          longitude: { type: "number" }
+        }
+      },
+      AdminStudentRequest: {
+        type: "object",
+        required: ["studentId", "name"],
+        properties: {
+          studentId: { type: "integer", format: "int64", minimum: 1 },
+          name: { type: "string", maxLength: 150 }
+        }
+      },
+      AdminStudentUpdateRequest: {
+        type: "object",
+        required: ["name", "active"],
+        properties: {
+          name: { type: "string", maxLength: 150 },
+          active: { type: "boolean" }
+        }
+      },
+      AdminStudent: {
+        type: "object",
+        additionalProperties: true,
+        properties: {
+          id: { type: "integer", format: "int64", example: 42 },
+          studentId: { type: "integer", format: "int64", example: 42 },
+          name: { type: "string", example: "Juan Pérez" },
+          routeId: { type: "integer", format: "int64", nullable: true },
+          active: { type: "boolean", example: true }
+        }
+      },
+      StudentMeetingPoint: {
+        type: "object",
+        additionalProperties: true,
+        properties: {
+          shiftCode: { type: "string", example: "541" },
+          meetingPointId: { type: "integer", format: "int64", example: 8 },
+          meetingPointCode: { type: "string", example: "P01" }
+        }
+      },
+      AssignStudentMeetingPointsRequest: {
+        type: "object",
+        required: ["assignments"],
+        properties: {
+          assignments: {
+            type: "array",
+            minItems: 1,
+            maxItems: 2,
+            items: {
+              type: "object",
+              required: ["shiftCode", "meetingPointId"],
+              properties: {
+                shiftCode: {
+                  type: "string",
+                  enum: ["541", "542"]
+                },
+                meetingPointId: {
+                  type: "integer",
+                  format: "int64",
+                  minimum: 1
+                }
+              }
+            }
+          }
+        }
+      },
+      AdminSchoolRequest: {
+        type: "object",
+        required: [
+          "name",
+          "schoolCode",
+          "phone",
+          "address",
+          "zone",
+          "latitude",
+          "longitude"
+        ],
+        properties: {
+          name: { type: "string", maxLength: 150 },
+          schoolCode: { type: "string", maxLength: 45 },
+          phone: { type: "string", maxLength: 45 },
+          address: { type: "string", maxLength: 200 },
+          zone: { type: "string", maxLength: 45 },
+          latitude: { type: "number", minimum: -90, maximum: 90 },
+          longitude: { type: "number", minimum: -180, maximum: 180 }
+        }
+      },
+      AdminSchool: {
+        type: "object",
+        additionalProperties: true,
+        properties: {
+          id: { type: "integer", format: "int64", example: 2 },
+          name: { type: "string", example: "Colegio Distrital" },
+          schoolCode: { type: "string", example: "SCH-01" },
+          zone: { type: "string", example: "NORTE" },
+          active: { type: "boolean", example: true }
+        }
+      },
+      TrackingSessionCreateRequest: {
+        type: "object",
+        required: ["trip_id", "guide_id", "geo_route_id", "policy_id"],
+        additionalProperties: false,
+        properties: {
+          trip_id: {
+            type: "string",
+            description: "Identificador opaco del viaje en operaciones.",
+            example: "12"
+          },
+          guide_id: {
+            type: "string",
+            description: "Identificador opaco del guía.",
+            example: "21"
+          },
+          geo_route_id: {
+            type: "string",
+            description: "Identificador de la ruta geográfica.",
+            example: "64b7f0c2e1a2b3c4d5e6f7a8"
+          },
+          policy_id: {
+            type: "string",
+            description: "Identificador de la política de seguimiento.",
+            example: "policy-2026"
+          }
+        }
+      },
+      TrackingSessionCreatedResponse: {
+        type: "object",
+        required: ["tracking_id", "session", "credential_status"],
+        properties: {
+          tracking_id: {
+            type: "string",
+            description: "Identificador opaco base64url emitido por el GPS.",
+            example: "3q2-7wV1z8Yk0pQr5sT6uA7bC8dE9fG0h"
+          },
+          session: { $ref: "#/components/schemas/TrackingSession" },
+          observation_credential: {
+            type: "string",
+            nullable: true,
+            description:
+              "Bearer de sesión para registrar observaciones. Solo se emite al crear la sesión."
+          },
+          credential_status: {
+            type: "string",
+            example: "issued"
+          }
+        }
+      },
+      TrackingSessionStatusResponse: {
+        type: "object",
+        required: ["session"],
+        properties: {
+          session: { $ref: "#/components/schemas/TrackingSession" }
+        }
+      },
+      TrackingSessionControlResponse: {
+        type: "object",
+        additionalProperties: true,
+        description:
+          "Vista de control del GPS. Los campos dependen de la política y el snapshot geográfico.",
+        properties: {
+          session: { $ref: "#/components/schemas/TrackingSession" }
+        }
+      },
+      TrackingSession: {
+        type: "object",
+        additionalProperties: true,
+        properties: {
+          id: {
+            type: "string",
+            example: "3q2-7wV1z8Yk0pQr5sT6uA7bC8dE9fG0h"
+          },
+          guide_id: { type: "string", example: "21" },
+          route_id: { type: "string", example: "64b7f0c2e1a2b3c4d5e6f7a8" },
+          trip_id: { type: "string", example: "12" },
+          state: { type: "string", enum: ["active", "finished"] },
+          started_at: { type: "string", format: "date-time" },
+          finished_at: {
+            type: "string",
+            format: "date-time",
+            nullable: true
+          },
+          last_sequence: { type: "integer", format: "int64", example: 14 },
+          last_captured_at: {
+            type: "string",
+            format: "date-time",
+            nullable: true
+          }
+        }
+      },
+      TrackingObservationRequest: {
+        type: "object",
+        required: [
+          "sequence",
+          "latitude",
+          "longitude",
+          "accuracy_m",
+          "captured_at"
+        ],
+        additionalProperties: false,
+        properties: {
+          sequence: { type: "integer", format: "int64", minimum: 1 },
+          latitude: { type: "number", minimum: -90, maximum: 90 },
+          longitude: { type: "number", minimum: -180, maximum: 180 },
+          accuracy_m: { type: "number", minimum: 0 },
+          captured_at: {
+            type: "string",
+            format: "date-time",
+            description: "Marca temporal RFC 3339 con nanosegundos opcionales."
+          }
+        }
+      },
+      TrackingObservationResponse: {
+        type: "object",
+        required: [
+          "tracking_id",
+          "sequence",
+          "acceptance",
+          "received_at",
+          "geographic_evaluation"
+        ],
+        properties: {
+          tracking_id: { type: "string" },
+          sequence: { type: "integer", format: "int64", example: 14 },
+          acceptance: {
+            type: "string",
+            enum: ["accepted", "replayed"]
+          },
+          received_at: { type: "string", format: "date-time" },
+          expires_at: {
+            type: "string",
+            format: "date-time",
+            nullable: true
+          },
+          geographic_evaluation: {
+            description:
+              "Resultado geográfico del GPS o la cadena not_evaluated.",
+            oneOf: [{ type: "string" }, { type: "object" }],
+            example: "not_evaluated"
+          }
+        }
+      },
+      TrackingPosition: {
+        type: "object",
+        required: [
+          "sequence",
+          "latitude",
+          "longitude",
+          "captured_at",
+          "received_at",
+          "geographic_evaluation"
+        ],
+        properties: {
+          sequence: { type: "integer", format: "int64", example: 14 },
+          latitude: { type: "number", example: 4.711 },
+          longitude: { type: "number", example: -74.0721 },
+          accuracy_m: { type: "number", nullable: true, example: 12.5 },
+          captured_at: { type: "string", format: "date-time" },
+          received_at: { type: "string", format: "date-time" },
+          geographic_evaluation: {
+            oneOf: [{ type: "string" }, { type: "object" }],
+            example: "not_evaluated"
+          }
+        }
+      },
+      TrackingPositionsResponse: {
+        type: "object",
+        required: [
+          "tracking_id",
+          "tracking_state",
+          "positions",
+          "next_after_sequence",
+          "has_more"
+        ],
+        properties: {
+          tracking_id: { type: "string" },
+          tracking_state: { type: "string", enum: ["active", "finished"] },
+          positions: {
+            type: "array",
+            items: { $ref: "#/components/schemas/TrackingPosition" }
+          },
+          next_after_sequence: { type: "integer", format: "int64" },
+          has_more: { type: "boolean" }
+        }
+      },
+      TrackingLatestPositionResponse: {
+        type: "object",
+        required: ["tracking_id", "tracking_state", "position", "age_ms"],
+        properties: {
+          tracking_id: { type: "string" },
+          tracking_state: { type: "string", enum: ["active", "finished"] },
+          position: { $ref: "#/components/schemas/TrackingPosition" },
+          age_ms: { type: "integer", format: "int64", minimum: 0 }
         }
       },
       ErrorResponse: {
