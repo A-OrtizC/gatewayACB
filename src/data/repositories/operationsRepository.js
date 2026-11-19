@@ -1,4 +1,4 @@
-const { get, post, put, patch, del } = require("../clients/httpClient");
+const { get, post, put } = require("../clients/httpClient");
 
 const BASE_URL = "/api/v1";
 
@@ -24,13 +24,13 @@ const OperationsRepository = {
     return get("operations", `${BASE_URL}/guide-faults/major/${majorFaultId}`, { headers });
   },
   markMinorFaultNotified: (minorFaultId, headers = {}) => {
-    return put("operations", `${BASE_URL}/guide-faults/minor/${minorFaultId}/notified`, { headers});
+    return put("operations", `${BASE_URL}/guide-faults/minor/${minorFaultId}/notified`, undefined, { headers });
   },
   markMajorFaultNotified: (majorFaultId, headers = {}) => {
-    return put("operations", `${BASE_URL}/guide-faults/major/${majorFaultId}/notified`, { headers });
+    return put("operations", `${BASE_URL}/guide-faults/major/${majorFaultId}/notified`, undefined, { headers });
   },
   markMajorFaultMinuted: (majorFaultId, headers = {}) => {
-    return put("operations", `${BASE_URL}/guide-faults/major/${majorFaultId}/minuted`, { headers });
+    return put("operations", `${BASE_URL}/guide-faults/major/${majorFaultId}/minuted`, undefined, { headers });
   },
 
   // Trip methods
@@ -74,7 +74,6 @@ const OperationsRepository = {
   registerOrUpdateAttendance: (tripId, studentId, data, headers = {}) => {
     return put("operations", `${BASE_URL}/trips/${tripId}/attendance/${studentId}`, data, { headers });
   },
-  
 };
 
 module.exports = OperationsRepository;

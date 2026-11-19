@@ -58,6 +58,18 @@ const GpsRepository = {
     });
   },
 
+  findLatestPosition: async (tracking_id, headers = {}) => {
+    return get("gps", `${BASEURL}/tracking-sessions/${tracking_id}/latest-position`, {
+      headers: internalHeaders(headers),
+    });
+  },
+
+  finishTrackingSession: async (tracking_id, headers = {}) => {
+    return post("gps", `${BASEURL}/tracking-sessions/${tracking_id}/finish`, undefined, {
+      headers: internalHeaders(headers),
+    });
+  },
+
   disableTrackingSession: async (tracking_id, headers = {}) => {
     return patch("gps", `${BASEURL}/tracking-sessions/${tracking_id}/disable`, undefined, {
       headers: internalHeaders(headers),

@@ -94,6 +94,20 @@ function createPathsService(repository) {
         () => repository.createImportKMZ(data, headers),
         correlationId
       );
+    },
+
+    validateFirstMeetingPoint(id, data, headers, correlationId) {
+      return callRepository(
+        () => repository.validateFirstMeetingPoint(id, data, headers),
+        correlationId
+      );
+    },
+
+    notifyStatus(data, headers, correlationId) {
+      return callRepository(
+        () => repository.notifyStatus(data, headers),
+        correlationId
+      );
     }
   };
 }

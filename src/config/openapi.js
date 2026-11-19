@@ -6,7 +6,7 @@ const openapi = {
     title: "API Gateway ACB",
     version: packageJson.version,
     description:
-      "Documentación de los endpoints expuestos por el API Gateway. El gateway reenvía las peticiones a los microservicios de autenticación, usuarios y rutas geográficas, y normaliza los errores de comunicación en el formato { error: { code, message, correlationId } }."
+      "Documentación de los endpoints expuestos por el API Gateway. El gateway reenvía las peticiones a auth, admin_users, admin_routes, admin_operations, acb_path_lo (paths) y acb_gps_lo (tracking GPS en Go), y normaliza los errores de comunicación en el formato { error: { code, message, correlationId } }."
   },
   servers: [
     {
@@ -42,6 +42,27 @@ const openapi = {
     {
       name: "MeetingPoints",
       description: "Consulta de puntos de encuentro geográficos"
+    },
+    {
+      name: "Schools",
+      description: "Colegios administrados por el servicio admin_routes"
+    },
+    {
+      name: "AdminRoutes",
+      description: "Rutas administrativas, matrícula de estudiantes y puntos de encuentro"
+    },
+    {
+      name: "Operations",
+      description: "Viajes, asistencia, eventos, faltas de guías y check-ins"
+    },
+    {
+      name: "Status",
+      description: "Reportes de códigos operativos del servicio de paths"
+    },
+    {
+      name: "Tracking",
+      description:
+        "Sesiones de tracking GPS atendidas exclusivamente por el componente Go (acb_gps_lo)"
     }
   ],
   paths: {
@@ -1552,5 +1573,8 @@ const openapi = {
     }
   }
 };
+
+// Rutas administrativas, de operaciones, de paths y de tracking GPS.
+Object.assign(openapi.paths, require("./openapi.admin").buildExtendedPaths());
 
 module.exports = openapi;

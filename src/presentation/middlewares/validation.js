@@ -29,6 +29,20 @@ function validateQuery(req, res, next) {
   return next();
 }
 
+function validateNumericParam(name) {
+  return function validateNumericId(req, res, next) {
+    const value = req.params[name];
+    if (!value || !/^\d+$/.test(value)) {
+      return validationError(
+        req,
+        res,
+        `El parámetro "${name}" debe ser un identificador numérico.`
+      );
+    }
+    return next();
+  };
+}
+
 function validateJsonBody(req, res, next) {
   if (
     !req.is("application/json") ||
@@ -50,6 +64,7 @@ function validateMultipartBody(req, res, next) {
 
 module.exports = {
   validateRouteId,
+  validateNumericParam,
   validateQuery,
   validateJsonBody,
   validateMultipartBody

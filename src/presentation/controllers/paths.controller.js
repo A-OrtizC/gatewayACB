@@ -1,13 +1,6 @@
-function createPathsController(service) {
-  function getRequestContext(req) {
-    const headers = {};
-    if (req.headers.authorization) {
-      headers.authorization = req.headers.authorization;
-    }
-    headers["x-correlation-id"] = req.correlationId;
-    return { headers, correlationId: req.correlationId };
-  }
+const { getRequestContext } = require("./controllerContext");
 
+function createPathsController(service) {
   return {
     async findAll(req, res) {
       const context = getRequestContext(req);
@@ -72,6 +65,27 @@ function createPathsController(service) {
         context.headers["content-type"] = req.headers["content-type"];
       }
       const result = await service.importKmz(
+        req.body,
+        context.headers,
+        context.correlationId
+      );
+      res.status(201).json(result);
+    },
+
+    async validateFirstMeetingPoint(req, res) {
+      const context = getRequestContext(req);
+      const result = await service.validateFirstMeetingPoint(
+        req.params.id,
+        req.body,
+        context.headers,
+        context.correlationId
+      );
+      res.status(200).json(result);
+    },
+
+    async notifyStatus(req, res) {
+      const context = getRequestContext(req);
+      const result = await service.notifyStatus(
         req.body,
         context.headers,
         context.correlationId

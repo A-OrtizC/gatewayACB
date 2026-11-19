@@ -1,5 +1,7 @@
 const cluster = require('node:cluster');
 const os = require('node:os');
+const services = require('./config/services');
+services.assertConfigured();
 const app = require('./app');
 const PORT = process.env.PORT || 5062;
 

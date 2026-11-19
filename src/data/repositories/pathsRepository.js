@@ -32,6 +32,15 @@ const PathsRepository = {
     return post("paths", `${BASE_URL}/imports/kmz`, data, { headers });
   },
 
+  validateFirstMeetingPoint: (id, data, headers = {}) => {
+    return post(
+      "paths",
+      `${BASE_URL}/routes/${id}/first-meeting-point/validate`,
+      data,
+      { headers }
+    );
+  },
+
   notifyStatus: (data, headers = {}) => {
     return post("paths", `${BASE_URL}/status/notify`, data, { headers });
   },

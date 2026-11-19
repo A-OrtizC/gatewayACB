@@ -13,10 +13,15 @@ services:
       - "5062:5062"
 
     environment:
-      NODE_ENV: production
+      NODE_ENV: developmet
       PORT: 5062
 
     restart: unless-stopped
+
+    # Permite alcanzar los servicios de adminACB publicados en el host
+    # tambien cuando Docker corre en Linux.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
     networks:
       - acb-net
