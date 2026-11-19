@@ -8,14 +8,27 @@ function internalHeaders(headers = {}) {
   const token = process.env.GPS_INTERNAL_TOKEN;
   if (!token) {
     throw new HttpError(
-      'GPS_INTERNAL_TOKEN no esta configurado para llamar al servicio GPS.',
+      "GPS_INTERNAL_TOKEN no esta configurado para llamar al servicio GPS.",
       undefined,
       "gps",
       null,
       { code: "SERVICE_NOT_CONFIGURED" }
     );
   }
-  return { ...headers, Authorization: `Bearer ${token}` };
+  return replaceHeader(headers, "Authorization", `Bearer ${token}`);
+}
+
+// Sustituye una cabecera sin dejar variantes con distinta capitalizacion, que
+// fetch combinaria en un unico valor separado por comas.
+function replaceHeader(headers, name, value) {
+  const result = { ...headers };
+  for (const existing of Object.keys(result)) {
+    if (existing.toLowerCase() === name.toLowerCase()) {
+      delete result[existing];
+    }
+  }
+  result[name] = value;
+  return result;
 }
 
 const GpsRepository = {
@@ -26,16 +39,26 @@ const GpsRepository = {
   },
 
   // Conserva el Bearer propio de la sesion; no lo sustituye por el interno.
+  // Devuelve tambien el status para distinguir 201 (nueva) de 200 (replay).
   createTrackingSessionObservation: (tracking_id, data, headers = {}) => {
-    return post("gps", `${BASEURL}/tracking-sessions/${tracking_id}/observations`, data, { headers });
+    return post("gps", `${BASEURL}/tracking-sessions/${tracking_id}/observations`, data, {
+      headers,
+      fullResponse: true,
+    });
   },
 
-  findTrackingSessionPositions: async (tracking_id, { after_sequence = null, limit = 10 } = {}, headers = {}) => {
+  findTrackingSessionPositions: async (
+    tracking_id,
+    { after_sequence = null, limit = null } = {},
+    headers = {}
+  ) => {
     const query = {};
     if (after_sequence !== null) {
       query.after_sequence = after_sequence;
     }
-    query.limit = limit;
+    if (limit !== null) {
+      query.limit = limit;
+    }
 
     return get("gps", `${BASEURL}/tracking-sessions/${tracking_id}/positions`, {
       headers: internalHeaders(headers),
@@ -43,12 +66,14 @@ const GpsRepository = {
     });
   },
 
+  // Devuelve tambien el status para distinguir 201 (nueva) de 200 (replay).
   createTrackingSession: async (data, idempotencyKey = null, headers = {}) => {
     const headersWithIdempotency = idempotencyKey
-      ? { ...headers, "Idempotency-Key": idempotencyKey }
+      ? replaceHeader(headers, "Idempotency-Key", idempotencyKey)
       : headers;
     return post("gps", `${BASEURL}/tracking-sessions`, data, {
       headers: internalHeaders(headersWithIdempotency),
+      fullResponse: true,
     });
   },
 
@@ -58,7 +83,7 @@ const GpsRepository = {
     });
   },
 
-  findLatestPosition: async (tracking_id, headers = {}) => {
+  findTrackingSessionLatestPosition: async (tracking_id, headers = {}) => {
     return get("gps", `${BASEURL}/tracking-sessions/${tracking_id}/latest-position`, {
       headers: internalHeaders(headers),
     });

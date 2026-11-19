@@ -1,216 +1,304 @@
-const { getRequestContext, sendResult } = require("./controllerContext");
+const { buildRequestContext, sendResult } = require("../utils/requestContext");
 
-function createAdminRoutesController(service) {
+function createRoutesController(service, orchestrator) {
   return {
-    async listSchools(req, res) {
-      const { headers, correlationId } = getRequestContext(req);
-      const result = await service.listSchools(req.query, headers, correlationId);
-      sendResult(res, result);
-    },
-
-    async getSchool(req, res) {
-      const { headers, correlationId } = getRequestContext(req);
-      const result = await service.getSchool(req.params.id, headers, correlationId);
-      sendResult(res, result);
-    },
-
-    async createSchool(req, res) {
-      const { headers, correlationId } = getRequestContext(req);
-      const result = await service.createSchool(req.body, headers, correlationId);
-      sendResult(res, result, 201);
-    },
-
-    async updateSchool(req, res) {
-      const { headers, correlationId } = getRequestContext(req);
-      const result = await service.updateSchool(
-        req.params.id,
-        req.body,
-        headers,
-        correlationId
-      );
-      sendResult(res, result);
-    },
-
-    async deleteSchool(req, res) {
-      const { headers, correlationId } = getRequestContext(req);
-      await service.deleteSchool(req.params.id, headers, correlationId);
-      res.status(204).end();
-    },
-
+    // Routes
     async listRoutes(req, res) {
-      const { headers, correlationId } = getRequestContext(req);
-      const result = await service.listRoutes(req.query, headers, correlationId);
+      const context = buildRequestContext(req);
+      const result = await service.listRoutes(
+        req.query.schoolId,
+        req.query.zone,
+        context.headers,
+        context.correlationId
+      );
       sendResult(res, result);
     },
 
     async getRoute(req, res) {
-      const { headers, correlationId } = getRequestContext(req);
-      const result = await service.getRoute(req.params.id, headers, correlationId);
+      const context = buildRequestContext(req);
+      const result = await service.getRoute(
+        req.params.id,
+        context.headers,
+        context.correlationId
+      );
       sendResult(res, result);
     },
 
     async createRoute(req, res) {
-      const { headers, correlationId } = getRequestContext(req);
-      const result = await service.createRoute(req.body, headers, correlationId);
-      sendResult(res, result, 201);
+      const context = buildRequestContext(req);
+      const result = await service.createRoute(
+        req.body,
+        context.headers,
+        context.correlationId
+      );
+      res.status(201).json(result);
     },
 
     async updateRoute(req, res) {
-      const { headers, correlationId } = getRequestContext(req);
+      const context = buildRequestContext(req);
       const result = await service.updateRoute(
         req.params.id,
         req.body,
-        headers,
-        correlationId
+        context.headers,
+        context.correlationId
       );
       sendResult(res, result);
     },
 
-    async deleteRoute(req, res) {
-      const { headers, correlationId } = getRequestContext(req);
-      await service.deleteRoute(req.params.id, headers, correlationId);
-      res.status(204).end();
+    async deactivateRoute(req, res) {
+      const context = buildRequestContext(req);
+      const result = await service.deactivateRoute(
+        req.params.id,
+        context.headers,
+        context.correlationId
+      );
+      sendResult(res, result);
     },
 
-    async assignGuides(req, res) {
-      const { headers, correlationId } = getRequestContext(req);
-      const result = await service.assignGuides(
+    async assignGuidesToRoute(req, res) {
+      const context = buildRequestContext(req);
+      const result = await service.assignGuidesToRoute(
         req.params.id,
         req.body,
-        headers,
-        correlationId
+        context.headers,
+        context.correlationId
       );
       sendResult(res, result);
     },
 
-    async listRouteStudents(req, res) {
-      const { headers, correlationId } = getRequestContext(req);
-      const result = await service.listRouteStudents(
+    async getRouteOverview(req, res) {
+      const context = buildRequestContext(req);
+      const result = await orchestrator.getOverview(
         req.params.id,
-        headers,
-        correlationId
+        context.headers,
+        context.correlationId
       );
       sendResult(res, result);
     },
 
-    async assignStudentToRoute(req, res) {
-      const { headers, correlationId } = getRequestContext(req);
-      const result = await service.assignStudentToRoute(
-        req.params.id,
+    // Meeting points
+    async listMeetingPointsForRoute(req, res) {
+      const context = buildRequestContext(req);
+      const result = await service.listMeetingPointsForRoute(
+        req.params.routeId,
+        context.headers,
+        context.correlationId
+      );
+      sendResult(res, result);
+    },
+
+    async createMeetingPoint(req, res) {
+      const context = buildRequestContext(req);
+      const result = await service.createMeetingPoint(
+        req.params.routeId,
         req.body,
-        headers,
-        correlationId
+        context.headers,
+        context.correlationId
       );
-      sendResult(res, result, 201);
-    },
-
-    async listRouteMeetingPoints(req, res) {
-      const { headers, correlationId } = getRequestContext(req);
-      const result = await service.listRouteMeetingPoints(
-        req.params.id,
-        headers,
-        correlationId
-      );
-      sendResult(res, result);
-    },
-
-    async createRouteMeetingPoint(req, res) {
-      const { headers, correlationId } = getRequestContext(req);
-      const result = await service.createRouteMeetingPoint(
-        req.params.id,
-        req.body,
-        headers,
-        correlationId
-      );
-      sendResult(res, result, 201);
+      res.status(201).json(result);
     },
 
     async getMeetingPoint(req, res) {
-      const { headers, correlationId } = getRequestContext(req);
+      const context = buildRequestContext(req);
       const result = await service.getMeetingPoint(
         req.params.id,
-        headers,
-        correlationId
+        context.headers,
+        context.correlationId
       );
       sendResult(res, result);
     },
 
     async updateMeetingPoint(req, res) {
-      const { headers, correlationId } = getRequestContext(req);
+      const context = buildRequestContext(req);
       const result = await service.updateMeetingPoint(
         req.params.id,
         req.body,
-        headers,
-        correlationId
+        context.headers,
+        context.correlationId
       );
       sendResult(res, result);
     },
 
     async deleteMeetingPoint(req, res) {
-      const { headers, correlationId } = getRequestContext(req);
-      await service.deleteMeetingPoint(req.params.id, headers, correlationId);
-      res.status(204).end();
+      const context = buildRequestContext(req);
+      const result = await service.deleteMeetingPoint(
+        req.params.id,
+        context.headers,
+        context.correlationId
+      );
+      sendResult(res, result);
     },
 
     async getRosterAtMeetingPoint(req, res) {
-      const { headers, correlationId } = getRequestContext(req);
+      const context = buildRequestContext(req);
       const result = await service.getRosterAtMeetingPoint(
         req.params.id,
         req.query.shift,
-        headers,
-        correlationId
+        context.headers,
+        context.correlationId
       );
       sendResult(res, result);
     },
 
-    async getRouteStudent(req, res) {
-      const { headers, correlationId } = getRequestContext(req);
-      const result = await service.getRouteStudent(
+    // Students
+    async listStudentsByRoute(req, res) {
+      const context = buildRequestContext(req);
+      const result = await service.listStudentsByRoute(
+        req.params.routeId,
+        context.headers,
+        context.correlationId
+      );
+      sendResult(res, result);
+    },
+
+    async assignStudentToRoute(req, res) {
+      const context = buildRequestContext(req);
+      const result = await service.assignStudentToRoute(
+        req.params.routeId,
+        req.body,
+        context.headers,
+        context.correlationId
+      );
+      res.status(201).json(result);
+    },
+
+    async getStudent(req, res) {
+      const context = buildRequestContext(req);
+      const result = await service.getStudent(
         req.params.id,
-        headers,
-        correlationId
+        context.headers,
+        context.correlationId
       );
       sendResult(res, result);
     },
 
-    async updateRouteStudent(req, res) {
-      const { headers, correlationId } = getRequestContext(req);
-      const result = await service.updateRouteStudent(
+    async updateStudent(req, res) {
+      const context = buildRequestContext(req);
+      const result = await service.updateStudent(
         req.params.id,
         req.body,
-        headers,
-        correlationId
+        context.headers,
+        context.correlationId
       );
       sendResult(res, result);
     },
 
-    async deleteRouteStudent(req, res) {
-      const { headers, correlationId } = getRequestContext(req);
-      await service.deleteRouteStudent(req.params.id, headers, correlationId);
-      res.status(204).end();
+    async deactivateStudent(req, res) {
+      const context = buildRequestContext(req);
+      const result = await service.deactivateStudent(
+        req.params.id,
+        context.headers,
+        context.correlationId
+      );
+      sendResult(res, result);
     },
 
     async getStudentMeetingPoints(req, res) {
-      const { headers, correlationId } = getRequestContext(req);
+      const context = buildRequestContext(req);
       const result = await service.getStudentMeetingPoints(
         req.params.id,
-        headers,
-        correlationId
+        context.headers,
+        context.correlationId
       );
       sendResult(res, result);
     },
 
     async assignStudentMeetingPoints(req, res) {
-      const { headers, correlationId } = getRequestContext(req);
+      const context = buildRequestContext(req);
       const result = await service.assignStudentMeetingPoints(
         req.params.id,
         req.body,
-        headers,
-        correlationId
+        context.headers,
+        context.correlationId
+      );
+      sendResult(res, result);
+    },
+
+    // Schools
+    async listSchools(req, res) {
+      const context = buildRequestContext(req);
+      const result = await service.listSchools(
+        req.query.zone,
+        context.headers,
+        context.correlationId
+      );
+      sendResult(res, result);
+    },
+
+    async getSchool(req, res) {
+      const context = buildRequestContext(req);
+      const result = await service.getSchool(
+        req.params.id,
+        context.headers,
+        context.correlationId
+      );
+      sendResult(res, result);
+    },
+
+    async createSchool(req, res) {
+      const context = buildRequestContext(req);
+      const result = await service.createSchool(
+        req.body,
+        context.headers,
+        context.correlationId
+      );
+      res.status(201).json(result);
+    },
+
+    async updateSchool(req, res) {
+      const context = buildRequestContext(req);
+      const result = await service.updateSchool(
+        req.params.id,
+        req.body,
+        context.headers,
+        context.correlationId
+      );
+      sendResult(res, result);
+    },
+
+    async deactivateSchool(req, res) {
+      const context = buildRequestContext(req);
+      const result = await service.deactivateSchool(
+        req.params.id,
+        context.headers,
+        context.correlationId
+      );
+      sendResult(res, result);
+    },
+
+    // Alias /admin/route-students/:id. Evita colisionar con /admin/students,
+    // que pertenece al servicio admin_users.
+    async getRouteStudent(req, res) {
+      const context = buildRequestContext(req);
+      const result = await service.getStudent(
+        req.params.id,
+        context.headers,
+        context.correlationId
+      );
+      sendResult(res, result);
+    },
+
+    async updateRouteStudent(req, res) {
+      const context = buildRequestContext(req);
+      const result = await service.updateStudent(
+        req.params.id,
+        req.body,
+        context.headers,
+        context.correlationId
+      );
+      sendResult(res, result);
+    },
+
+    async deactivateRouteStudent(req, res) {
+      const context = buildRequestContext(req);
+      const result = await service.deactivateStudent(
+        req.params.id,
+        context.headers,
+        context.correlationId
       );
       sendResult(res, result);
     },
   };
 }
 
-module.exports = createAdminRoutesController;
+module.exports = createRoutesController;

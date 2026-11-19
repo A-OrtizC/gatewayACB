@@ -54,14 +54,16 @@ async function startApp(services = {}) {
     validateFirstMeetingPoint: fake("validateFirstMeetingPoint"),
     notifyStatus: fake("notifyStatus"),
   };
-  const adminRoutesService = services.adminRoutesService || {};
+  const routesService = services.routesService || {};
   const operationsService = services.operationsService || {};
   const gpsService = services.gpsService || {};
 
   const server = createApp({
     pathsService,
-    adminRoutesService,
+    routesService,
+    routesOrchestrator: services.routesOrchestrator,
     operationsService,
+    tripsOrchestrator: services.tripsOrchestrator,
     gpsService,
   }).listen(0);
   await once(server, "listening");
@@ -77,24 +79,24 @@ async function startApp(services = {}) {
 
 test("admin_routes se publica bajo /api/v1/admin y reenvía la ruta real", async (t) => {
   const calls = [];
-  const record = (name) => async (...args) => {
+  const record = (name, value = { name }) => async (...args) => {
     calls.push([name, ...args]);
-    return { name };
+    return typeof value === "function" ? value(...args) : value;
   };
   const harness = await startApp({
-    adminRoutesService: {
+    routesService: {
       listSchools: record("listSchools"),
       createSchool: record("createSchool"),
       getSchool: record("getSchool"),
       updateSchool: record("updateSchool"),
-      deleteSchool: record("deleteSchool"),
+      deactivateSchool: record("deactivateSchool"),
       listRoutes: record("listRoutes"),
-      assignGuides: record("assignGuides"),
-      listRouteStudents: record("listRouteStudents"),
-      createRouteMeetingPoint: record("createRouteMeetingPoint"),
-      deleteMeetingPoint: record("deleteMeetingPoint"),
+      assignGuidesToRoute: record("assignGuidesToRoute"),
+      listStudentsByRoute: record("listStudentsByRoute"),
+      createMeetingPoint: record("createMeetingPoint"),
+      deleteMeetingPoint: record("deleteMeetingPoint", null),
       getRosterAtMeetingPoint: record("getRosterAtMeetingPoint"),
-      getRouteStudent: record("getRouteStudent"),
+      getStudent: record("getStudent"),
     },
   });
   t.after(() => harness.close());
@@ -104,7 +106,7 @@ test("admin_routes se publica bajo /api/v1/admin y reenvía la ruta real", async
   });
   assert.equal(schools.status, 200);
   assert.equal(calls.at(-1)[0], "listSchools");
-  assert.deepEqual({ ...calls.at(-1)[1] }, { zone: "Norte" });
+  assert.equal(calls.at(-1)[1], "Norte");
   assert.equal(calls.at(-1)[2].authorization, "Bearer jwt");
   assert.equal(calls.at(-1)[2]["x-correlation-id"], "admin-1");
 
@@ -117,7 +119,7 @@ test("admin_routes se publica bajo /api/v1/admin y reenvía la ruta real", async
     }
   );
   assert.equal(guideAssignment.status, 200);
-  assert.equal(calls.at(-1)[0], "assignGuides");
+  assert.equal(calls.at(-1)[0], "assignGuidesToRoute");
   assert.equal(calls.at(-1)[1], "7");
   assert.deepEqual(calls.at(-1)[2], { guides: [{ guideId: 3, primary: true }] });
 
@@ -129,6 +131,12 @@ test("admin_routes se publica bajo /api/v1/admin y reenvía la ruta real", async
   assert.equal(calls.at(-1)[1], "4");
   assert.equal(calls.at(-1)[2], "542");
 
+  const routeStudent = await fetch(
+    `${harness.baseUrl}/api/v1/admin/route-students/5`
+  );
+  assert.equal(routeStudent.status, 200);
+  assert.equal(calls.at(-1)[0], "getStudent");
+
   const removed = await fetch(`${harness.baseUrl}/api/v1/admin/meeting-points/9`, {
     method: "DELETE",
   });
@@ -139,6 +147,23 @@ test("admin_routes se publica bajo /api/v1/admin y reenvía la ruta real", async
   assert.equal(invalidId.status, 400);
   assert.equal((await invalidId.json()).error.code, "INVALID_REQUEST");
   assert.equal(calls.at(-1)[0], "deleteMeetingPoint");
+});
+
+test("admin_routes publica el resumen de ruta en /admin/routes/{id}/overview", async (t) => {
+  const harness = await startApp({
+    routesService: {},
+    routesOrchestrator: {
+      getOverview: async (id) => ({ route: { id }, firstMeetingPoint: null }),
+    },
+  });
+  t.after(() => harness.close());
+
+  const response = await fetch(`${harness.baseUrl}/api/v1/admin/routes/3/overview`);
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    route: { id: "3" },
+    firstMeetingPoint: null,
+  });
 });
 
 test("admin_operations se publica bajo /api/v1/admin y valida ids numéricos", async (t) => {
@@ -158,9 +183,9 @@ test("admin_operations se publica bajo /api/v1/admin y valida ids numéricos", a
       initializeRoster: record("initializeRoster"),
       listStudentAttendance: record("listStudentAttendance"),
       registerOrUpdateAttendance: record("registerOrUpdateAttendance"),
-      listCyclesForGuide: record("listCyclesForGuide"),
+      listGuideFaultCycles: record("listGuideFaultCycles"),
       markMinorFaultNotified: record("markMinorFaultNotified"),
-      listGuideCheckInAttempts: record("listGuideCheckInAttempts"),
+      listGuideCheckIns: record("listGuideCheckIns"),
     },
   });
   t.after(() => harness.close());
@@ -191,7 +216,7 @@ test("admin_operations se publica bajo /api/v1/admin y valida ids numéricos", a
     {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ students: [1, 2] }),
+      body: JSON.stringify([{ studentId: 1 }, { studentId: 2 }]),
     }
   );
   assert.equal(roster.status, 201);
@@ -209,7 +234,7 @@ test("admin_operations se publica bajo /api/v1/admin y valida ids numéricos", a
     `${harness.baseUrl}/api/v1/admin/trip-guides/3/check-ins`
   );
   assert.equal(checkIns.status, 200);
-  assert.equal(calls.at(-1)[0], "listGuideCheckInAttempts");
+  assert.equal(calls.at(-1)[0], "listGuideCheckIns");
 
   const invalid = await fetch(`${harness.baseUrl}/api/v1/admin/trips/abc/start`, {
     method: "POST",
@@ -220,36 +245,36 @@ test("admin_operations se publica bajo /api/v1/admin y valida ids numéricos", a
 test("el tracking GPS se enruta solo al componente Go", async (t) => {
   const calls = [];
   const gpsService = {
-    createSession: async (...args) => {
-      calls.push(["createSession", ...args]);
+    createTrackingSession: async (...args) => {
+      calls.push(["createTrackingSession", ...args]);
+      return { status: 201, body: { tracking_id: "t-1" } };
+    },
+    getTrackingSession: async (...args) => {
+      calls.push(["getTrackingSession", ...args]);
       return { tracking_id: "t-1" };
     },
-    getSession: async (...args) => {
-      calls.push(["getSession", ...args]);
-      return { tracking_id: "t-1" };
+    registerObservation: async (...args) => {
+      calls.push(["registerObservation", ...args]);
+      return { status: 201, body: { ok: true } };
     },
-    createObservation: async (...args) => {
-      calls.push(["createObservation", ...args]);
-      return { ok: true };
-    },
-    listPositions: async (...args) => {
-      calls.push(["listPositions", ...args]);
+    listTrackingSessionPositions: async (...args) => {
+      calls.push(["listTrackingSessionPositions", ...args]);
       return [{ sequence: 1 }];
     },
     getLatestPosition: async (...args) => {
       calls.push(["getLatestPosition", ...args]);
       return { sequence: 1 };
     },
-    getControl: async (...args) => {
-      calls.push(["getControl", ...args]);
+    getTrackingSessionControl: async (...args) => {
+      calls.push(["getTrackingSessionControl", ...args]);
       return { state: "active" };
     },
-    finishSession: async (...args) => {
-      calls.push(["finishSession", ...args]);
+    finishTrackingSession: async (...args) => {
+      calls.push(["finishTrackingSession", ...args]);
       return { state: "finished" };
     },
-    disableSession: async (...args) => {
-      calls.push(["disableSession", ...args]);
+    disableTrackingSession: async (...args) => {
+      calls.push(["disableTrackingSession", ...args]);
       return { state: "disabled" };
     },
   };
@@ -265,7 +290,8 @@ test("el tracking GPS se enruta solo al componente Go", async (t) => {
     body: JSON.stringify({ guide_id: "g-1", route_id: "r-1" }),
   });
   assert.equal(created.status, 201);
-  assert.equal(calls.at(-1)[0], "createSession");
+  assert.equal(calls.at(-1)[0], "createTrackingSession");
+  assert.deepEqual(calls.at(-1)[1], { guide_id: "g-1", route_id: "r-1" });
   assert.equal(calls.at(-1)[2], "idem-1");
 
   const latest = await fetch(
@@ -279,7 +305,7 @@ test("el tracking GPS se enruta solo al componente Go", async (t) => {
     { method: "PATCH" }
   );
   assert.equal(disabled.status, 200);
-  assert.equal(calls.at(-1)[0], "disableSession");
+  assert.equal(calls.at(-1)[0], "disableTrackingSession");
 
   // pathsService no debe recibir ninguna llamada de tracking.
   assert.equal(harness.calls.some(([name]) => name.startsWith("find")), false);
@@ -364,17 +390,19 @@ test("los repositorios administrativos usan la firma real del cliente HTTP", asy
   };
 
   await withFetchStub(stub, async () => {
-    await routesRepository.listSchools({ zone: "Norte" }, { authorization: "Bearer x" });
+    await routesRepository.listRoutes(2, "Norte", {
+      authorization: "Bearer x",
+    });
     await routesRepository.getRosterAtMeetingPoint(4, "542");
     await operationsRepository.markMinorFaultNotified(8);
     await pathsRepository.validateFirstMeetingPoint("route-1", { latitude: 4 });
-    await gpsRepository.findLatestPosition("tracking-1");
+    await gpsRepository.findTrackingSessionLatestPosition("tracking-1");
   });
 
-  const [schoolsUrl, schoolsOptions] = requests[0];
-  assert.equal(schoolsUrl, "http://routes.test/api/v1/schools?zone=Norte");
-  assert.equal(schoolsOptions.method, "GET");
-  assert.equal(schoolsOptions.headers.authorization, "Bearer x");
+  const [routesUrl, routesOptions] = requests[0];
+  assert.equal(routesUrl, "http://routes.test/api/v1/routes?schoolId=2&zone=Norte");
+  assert.equal(routesOptions.method, "GET");
+  assert.equal(routesOptions.headers.authorization, "Bearer x");
 
   assert.equal(
     requests[1][0],

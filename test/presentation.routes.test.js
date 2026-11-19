@@ -47,6 +47,14 @@ test("API HTTP de rutas", async (t) => {
     importKmz: async (...args) => {
       calls.push(["importKmz", ...args]);
       return { id: "import-1" };
+    },
+    notifyStatus: async (...args) => {
+      calls.push(["notifyStatus", ...args]);
+      return { route_id: "route-1", status: "active" };
+    },
+    validateFirstMeetingPoint: async (...args) => {
+      calls.push(["validateFirstMeetingPoint", ...args]);
+      return { status: "inside", distance_m: 12.3 };
     }
   };
   const server = app({ pathsService }).listen(0);
@@ -141,6 +149,45 @@ test("API HTTP de rutas", async (t) => {
     assert.ok(calls.at(-1)[1].includes(Buffer.from("kmz fixture")));
   });
 
+  await t.test("notificación de estado y validación geográfica", async () => {
+    const notify = await fetch(`${baseUrl}/api/v1/status/notify`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-correlation-id": "status-test"
+      },
+      body: JSON.stringify({ route_id: "route-1", status: "active" })
+    });
+    assert.equal(notify.status, 201);
+    assert.deepEqual(await notify.json(), {
+      route_id: "route-1",
+      status: "active"
+    });
+    assert.equal(calls.at(-1)[0], "notifyStatus");
+    assert.deepEqual(calls.at(-1)[1], { route_id: "route-1", status: "active" });
+    assert.equal(calls.at(-1)[2]["x-correlation-id"], "status-test");
+
+    const validation = await fetch(
+      `${baseUrl}/api/v1/routes/route-1/first-meeting-point/validate`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ latitude: 4.711, longitude: -74.0721 })
+      }
+    );
+    assert.equal(validation.status, 200);
+    assert.deepEqual(await validation.json(), {
+      status: "inside",
+      distance_m: 12.3
+    });
+    assert.equal(calls.at(-1)[0], "validateFirstMeetingPoint");
+    assert.equal(calls.at(-1)[1], "route-1");
+    assert.deepEqual(calls.at(-1)[2], {
+      latitude: 4.711,
+      longitude: -74.0721
+    });
+  });
+
   await t.test("validación y endpoint inexistente", async () => {
     const invalidQuery = await fetch(`${baseUrl}/api/v1/routes?term=${"x".repeat(501)}`);
     assert.equal(invalidQuery.status, 400);
@@ -232,6 +279,7 @@ test("OpenAPI publica todos los endpoints del gateway", async () => {
     "/admin/schools/{id}": ["get", "put", "delete"],
     "/admin/routes": ["get", "post"],
     "/admin/routes/{id}": ["get", "put", "delete"],
+    "/admin/routes/{id}/overview": ["get"],
     "/admin/routes/{id}/guides": ["put"],
     "/admin/routes/{id}/students": ["get", "post"],
     "/admin/routes/{id}/meeting-points": ["get", "post"],
@@ -242,6 +290,7 @@ test("OpenAPI publica todos los endpoints del gateway", async () => {
     "/admin/trips": ["post"],
     "/admin/trips/by-route/{routeId}": ["get"],
     "/admin/trips/{tripId}": ["get"],
+    "/admin/trips/{tripId}/overview": ["get"],
     "/admin/trips/{tripId}/guides": ["get"],
     "/admin/trips/{tripId}/guides/{tripGuideId}/replacement": ["put"],
     "/admin/trips/{tripId}/start": ["post"],
@@ -257,7 +306,6 @@ test("OpenAPI publica todos los endpoints del gateway", async () => {
     "/admin/guide-faults/major/{majorFaultId}/notified": ["put"],
     "/admin/guide-faults/major/{majorFaultId}/minuted": ["put"],
     "/admin/trip-guides/{tripGuideId}/check-ins": ["get"],
-    "/admin/internal/trip-guides/{tripGuideId}/check-ins": ["post"],
     "/tracking-sessions": ["post"],
     "/tracking-sessions/{trackingId}": ["get"],
     "/tracking-sessions/{trackingId}/observations": ["post"],
@@ -312,6 +360,58 @@ test("OpenAPI publica todos los endpoints del gateway", async () => {
     importContent["multipart/form-data"].schema.properties.file.format,
     "binary"
   );
+
+  // Contrato GPS: replay 200, id opaco, paginación acotada y headers del upstream.
+  const trackingCreate = openapi.paths["/tracking-sessions"].post;
+  assert.ok(trackingCreate.responses[201]);
+  assert.ok(trackingCreate.responses[200]);
+  assert.ok(trackingCreate.responses[503].headers["Retry-After"]);
+
+  const observation401 =
+    openapi.paths["/tracking-sessions/{trackingId}/observations"].post
+      .responses[401];
+  assert.ok(observation401.headers["WWW-Authenticate"]);
+
+  const trackingId = openapi.paths["/tracking-sessions/{trackingId}"].get
+    .parameters.find((parameter) => parameter.name === "trackingId").schema;
+  assert.equal(trackingId.maxLength, 256);
+  assert.notEqual(trackingId.format, "uuid");
+
+  const limit = openapi.paths["/tracking-sessions/{trackingId}/positions"].get
+    .parameters.find((parameter) => parameter.name === "limit").schema;
+  assert.equal(limit.default, 50);
+  assert.equal(limit.maximum, 100);
+  assert.equal(limit.minimum, 1);
+
+  const rosterSchema =
+    openapi.paths["/admin/trips/{tripId}/attendance/roster"].post.requestBody
+      .content["application/json"].schema;
+  assert.equal(rosterSchema.type, "array");
+
+  const minuted =
+    openapi.paths["/admin/guide-faults/major/{majorFaultId}/minuted"].put.responses;
+  assert.ok(minuted[204]);
+});
+
+test("el OpenAPI no publica el check-in interno de escritura", async () => {
+  const openapi = require("../src/config/openapi");
+  assert.equal(
+    openapi.paths["/internal/trip-guides/{tripGuideId}/check-ins"],
+    undefined
+  );
+});
+
+test("los operationId del OpenAPI son únicos", async () => {
+  const openapi = require("../src/config/openapi");
+  const identifiers = [];
+  for (const path of Object.values(openapi.paths)) {
+    for (const operation of Object.values(path)) {
+      if (operation && typeof operation === "object" && operation.operationId) {
+        identifiers.push(operation.operationId);
+      }
+    }
+  }
+  assert.equal(new Set(identifiers).size, identifiers.length);
 });
 
 test("todas las referencias del OpenAPI resuelven", async () => {

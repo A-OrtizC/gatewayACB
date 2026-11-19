@@ -1,73 +1,95 @@
 const express = require("express");
-const { validateNumericParam } = require("../middlewares/validation");
+const {
+  validateJsonBody,
+  validateJsonArray,
+  validateNumericParam,
+} = require("../middlewares/validation");
 
-function createOperationsRouter(controller) {
+const tripId = validateNumericParam("tripId", "El identificador de viaje no es válido.");
+const tripGuideId = validateNumericParam(
+  "tripGuideId",
+  "El identificador de guía de viaje no es válido."
+);
+const studentId = validateNumericParam(
+  "studentId",
+  "El identificador de estudiante no es válido."
+);
+
+function createTripsRouter(controller) {
   const router = express.Router();
-  for (const name of [
-    "tripId",
-    "routeId",
-    "tripGuideId",
-    "studentId",
-    "guideId",
-    "cycleId",
-    "majorFaultId",
-    "minorFaultId",
-  ]) {
-    router.param(name, validateNumericParam(name));
-  }
 
-  // ---- Viajes ----
-  router.post("/trips", controller.createTrip);
-  router.get("/trips/by-route/:routeId", controller.getTripByRouteAndDate);
-  router.get("/trips/:tripId", controller.getTrip);
-  router.get("/trips/:tripId/guides", controller.listTripGuides);
+  router.get("/by-route/:routeId", validateNumericParam("routeId"), controller.getTripByRouteAndDate);
+  router.post("/", validateJsonBody, controller.createTrip);
+  router.get("/:tripId/overview", tripId, controller.getTripOverview);
+  router.get("/:tripId/guides", tripId, controller.listTripGuides);
   router.put(
-    "/trips/:tripId/guides/:tripGuideId/replacement",
-    controller.replaceGuide
+    "/:tripId/guides/:tripGuideId/replacement",
+    tripId,
+    tripGuideId,
+    validateJsonBody,
+    controller.replaceTripGuide
   );
-  router.post("/trips/:tripId/start", controller.startTrip);
-  router.post("/trips/:tripId/finish", controller.finishTrip);
-
-  // ---- Eventos del viaje ----
-  router.get("/trips/:tripId/events", controller.listTripEvents);
-  router.post("/trips/:tripId/events", controller.registerTripEvent);
-
-  // ---- Asistencia de estudiantes ----
-  router.post("/trips/:tripId/attendance/roster", controller.initializeRoster);
-  router.get("/trips/:tripId/attendance", controller.listStudentAttendance);
+  router.post("/:tripId/start", tripId, controller.startTrip);
+  router.post("/:tripId/finish", tripId, controller.finishTrip);
+  router.get("/:tripId/events", tripId, controller.listTripEvents);
+  router.post("/:tripId/events", tripId, validateJsonBody, controller.registerTripEvent);
+  router.post(
+    "/:tripId/attendance/roster",
+    tripId,
+    validateJsonArray,
+    controller.initializeRoster
+  );
+  router.get("/:tripId/attendance", tripId, controller.listStudentAttendance);
   router.put(
-    "/trips/:tripId/attendance/:studentId",
+    "/:tripId/attendance/:studentId",
+    tripId,
+    studentId,
+    validateJsonBody,
     controller.registerOrUpdateAttendance
   );
+  router.get("/:tripId", tripId, controller.getTrip);
 
-  // ---- Faltas de guias ----
-  router.get("/guide-faults/guides/:guideId/cycles", controller.listCyclesForGuide);
-  router.get("/guide-faults/cycles/:cycleId/minor", controller.listMinorFaults);
-  router.get("/guide-faults/major/:majorFaultId", controller.getMajorFault);
+  return router;
+}
+
+function createTripGuidesRouter(controller) {
+  const router = express.Router();
+  router.get("/:tripGuideId/check-ins", tripGuideId, controller.listGuideCheckIns);
+  return router;
+}
+
+const guideId = validateNumericParam("guideId");
+const cycleId = validateNumericParam("cycleId");
+const majorFaultId = validateNumericParam("majorFaultId");
+const minorFaultId = validateNumericParam("minorFaultId");
+
+function createGuideFaultsRouter(controller) {
+  const router = express.Router();
+
+  router.get("/guides/:guideId/cycles", guideId, controller.listGuideFaultCycles);
+  router.get("/cycles/:cycleId/minor", cycleId, controller.listMinorFaults);
+  router.get("/major/:majorFaultId", majorFaultId, controller.getMajorFault);
   router.put(
-    "/guide-faults/minor/:minorFaultId/notified",
+    "/minor/:minorFaultId/notified",
+    minorFaultId,
     controller.markMinorFaultNotified
   );
   router.put(
-    "/guide-faults/major/:majorFaultId/notified",
+    "/major/:majorFaultId/notified",
+    majorFaultId,
     controller.markMajorFaultNotified
   );
   router.put(
-    "/guide-faults/major/:majorFaultId/minuted",
+    "/major/:majorFaultId/minuted",
+    majorFaultId,
     controller.markMajorFaultMinuted
-  );
-
-  // ---- Check-ins de guias ----
-  router.get(
-    "/trip-guides/:tripGuideId/check-ins",
-    controller.listGuideCheckInAttempts
-  );
-  router.post(
-    "/internal/trip-guides/:tripGuideId/check-ins",
-    controller.recordGeolocationResult
   );
 
   return router;
 }
 
-module.exports = createOperationsRouter;
+module.exports = {
+  createTripsRouter,
+  createTripGuidesRouter,
+  createGuideFaultsRouter,
+};

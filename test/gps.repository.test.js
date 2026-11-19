@@ -98,6 +98,40 @@ test("gpsRepository respeta el contrato del componente Go", async (t) => {
     assert.equal(call.options.headers.Authorization, "Bearer internal-token");
     assert.equal(call.options.body, undefined);
   });
+
+  await t.test("la ultima posicion usa el token interno", async () => {
+    await gpsRepository.findTrackingSessionLatestPosition("session-1");
+    const call = stub.calls.at(-1);
+    assert.equal(call.options.method, "GET");
+    assert.equal(call.url, "http://gps.test/api/v1/tracking-sessions/session-1/latest-position");
+    assert.equal(call.options.headers.Authorization, "Bearer internal-token");
+  });
+
+  await t.test("finish usa POST sin cuerpo y token interno", async () => {
+    await gpsRepository.finishTrackingSession("session-1");
+    const call = stub.calls.at(-1);
+    assert.equal(call.options.method, "POST");
+    assert.equal(call.url, "http://gps.test/api/v1/tracking-sessions/session-1/finish");
+    assert.equal(call.options.headers.Authorization, "Bearer internal-token");
+    assert.equal(call.options.body, undefined);
+  });
+
+  await t.test("creacion y observacion devuelven el status del upstream", async () => {
+    const created = await gpsRepository.createTrackingSession(
+      { trip_id: "trip-1", guide_id: "guide-1", geo_route_id: "route-1", policy_id: "policy-1" },
+      "idem-2"
+    );
+    assert.equal(created.status, 200);
+    assert.deepEqual(created.body, {});
+
+    const observed = await gpsRepository.createTrackingSessionObservation(
+      "session-1",
+      { sequence: 1, latitude: 4.6, longitude: -74.1 },
+      { Authorization: "Bearer session-token" }
+    );
+    assert.equal(observed.status, 200);
+    assert.deepEqual(observed.body, {});
+  });
 });
 
 test("gpsRepository falla de forma explicita sin GPS_INTERNAL_TOKEN", async () => {

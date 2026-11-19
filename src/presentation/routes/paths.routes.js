@@ -2,7 +2,8 @@ const express = require("express");
 const {
   validateQuery,
   validateRouteId,
-  validateMultipartBody
+  validateJsonBody,
+  validateMultipartBody,
 } = require("../middlewares/validation");
 
 function createPathsRouter(controller) {
@@ -12,12 +13,13 @@ function createPathsRouter(controller) {
   router.get("/search", validateQuery, controller.search);
   router.get("/:id/overview", validateRouteId, controller.getOverview);
   router.get("/:id/first-meeting-point", validateRouteId, controller.getFirstMeetingPoint);
-  router.get("/:id/endpoints", validateRouteId, controller.getEndpoints);
   router.post(
     "/:id/first-meeting-point/validate",
     validateRouteId,
+    validateJsonBody,
     controller.validateFirstMeetingPoint
   );
+  router.get("/:id/endpoints", validateRouteId, controller.getEndpoints);
   router.get("/:id", validateRouteId, controller.findById);
   router.post(
     "/imports/kmz",
@@ -29,6 +31,8 @@ function createPathsRouter(controller) {
   return router;
 }
 
+// Alias /api/v1/imports/kmz usado por webadminACB. El contrato canonico de
+// geolocaACB es /api/v1/routes/imports/kmz, que createPathsRouter ya expone.
 function createImportsRouter(controller) {
   const router = express.Router();
   router.post(
@@ -48,7 +52,7 @@ function createMeetingPointsRouter(controller) {
 
 function createStatusRouter(controller) {
   const router = express.Router();
-  router.post("/notify", controller.notifyStatus);
+  router.post("/notify", validateJsonBody, controller.notifyStatus);
   return router;
 }
 
@@ -56,5 +60,5 @@ module.exports = {
   createPathsRouter,
   createImportsRouter,
   createMeetingPointsRouter,
-  createStatusRouter
+  createStatusRouter,
 };

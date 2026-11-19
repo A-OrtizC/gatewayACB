@@ -81,7 +81,7 @@ function buildExtendedPaths() {
     in: "path",
     required: true,
     description: "Identificador de la sesión de tracking emitido por el componente Go.",
-    schema: { type: "string", minLength: 1, maxLength: 128 },
+    schema: { type: "string", minLength: 1, maxLength: 256 },
   };
 
   return {
@@ -236,6 +236,16 @@ function buildExtendedPaths() {
         operationId: "deleteAdminRoute",
         params: [adminId],
         responses: noContent(),
+      }),
+    },
+    "/admin/routes/{id}/overview": {
+      get: operation({
+        tag: "AdminRoutes",
+        summary: "Consultar el resumen de una ruta administrativa",
+        description:
+          "Combina la ruta administrativa con su primer punto de encuentro y sus puntos extremos.",
+        operationId: "getAdminRouteOverview",
+        params: [adminId],
       }),
     },
     "/admin/routes/{id}/guides": {
@@ -394,6 +404,16 @@ function buildExtendedPaths() {
         params: [tripId],
       }),
     },
+    "/admin/trips/{tripId}/overview": {
+      get: operation({
+        tag: "Operations",
+        summary: "Consultar el resumen del viaje",
+        description:
+          "Combina el viaje, sus guías, la asistencia y los eventos en una sola respuesta.",
+        operationId: "getTripOverview",
+        params: [tripId],
+      }),
+    },
     "/admin/trips/{tripId}/guides": {
       get: operation({
         tag: "Operations",
@@ -447,14 +467,25 @@ function buildExtendedPaths() {
 
     // ---- admin_operations: asistencia ----
     "/admin/trips/{tripId}/attendance/roster": {
-      post: operation({
-        tag: "Operations",
+      post: {
+        tags: ["Operations"],
         summary: "Inicializar lista de asistencia",
         operationId: "initializeRoster",
-        params: [tripId],
-        body: true,
-        responses: { 201: jsonResponse("Lista de asistencia inicializada.") },
-      }),
+        security: [{ bearerAuth: [] }],
+        parameters: [correlation, tripId],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { type: "array", items: { type: "object" } },
+            },
+          },
+        },
+        responses: {
+          201: jsonResponse("Lista de asistencia inicializada."),
+          ...upstreamErrors,
+        },
+      },
     },
     "/admin/trips/{tripId}/attendance": {
       get: operation({
@@ -532,16 +563,6 @@ function buildExtendedPaths() {
         summary: "Listar intentos de check-in del guía en el viaje",
         operationId: "listGuideCheckIns",
         params: [idParam("tripGuideId", "Identificador del guía dentro del viaje.")],
-      }),
-    },
-    "/admin/internal/trip-guides/{tripGuideId}/check-ins": {
-      post: operation({
-        tag: "Operations",
-        summary: "Registrar resultado de geolocalización del check-in",
-        operationId: "recordGuideCheckIn",
-        params: [idParam("tripGuideId", "Identificador del guía dentro del viaje.")],
-        body: true,
-        responses: { 201: jsonResponse("Check-in registrado.") },
       }),
     },
 
@@ -626,7 +647,7 @@ function buildExtendedPaths() {
             name: "Idempotency-Key",
             in: "header",
             required: false,
-            schema: { type: "string", maxLength: 128 },
+            schema: { type: "string", maxLength: 256 },
           },
         ],
         requestBody: {
@@ -635,6 +656,19 @@ function buildExtendedPaths() {
         },
         responses: {
           201: jsonResponse("Sesión creada."),
+          200: jsonResponse(
+            "Sesión ya existente para la misma Idempotency-Key (replay)."
+          ),
+          503: {
+            description:
+              "Almacenamiento GPS no disponible temporalmente (incluye Retry-After).",
+            headers: {
+              "Retry-After": {
+                schema: { type: "integer", minimum: 0 },
+                description: "Segundos que el cliente debe esperar antes de reintentar.",
+              },
+            },
+          },
           ...upstreamErrors,
         },
       },
@@ -664,7 +698,18 @@ function buildExtendedPaths() {
         },
         responses: {
           201: jsonResponse("Observación registrada."),
+          200: jsonResponse("Observación ya registrada (replay de Idempotency-Key)."),
           ...upstreamErrors,
+          401: {
+            description:
+              "Credencial de sesión inválida, cerrada o inexistente (incluye WWW-Authenticate).",
+            headers: {
+              "WWW-Authenticate": {
+                schema: { type: "string" },
+                description: "Esquema de autenticación esperado por el componente Go.",
+              },
+            },
+          },
         },
       },
     },
@@ -686,7 +731,7 @@ function buildExtendedPaths() {
             name: "limit",
             in: "query",
             required: false,
-            schema: { type: "integer", minimum: 1, maximum: 100, default: 10 },
+            schema: { type: "integer", minimum: 1, maximum: 100, default: 50 },
           },
         ],
         responses: {

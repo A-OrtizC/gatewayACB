@@ -1,21 +1,8 @@
-const { normalizeMsError } = require("../errors/normalizeMsError");
-const CommunicationError = require("../errors/CommunicationError");
+const { createRepositoryCaller } = require("../utils/callRepository");
 const NotFoundError = require("../errors/NotFoundError");
 
 function createPathsService(repository) {
-  async function callRepository(operation, correlationId) {
-    try {
-      return await operation();
-    } catch (error) {
-      if (error instanceof CommunicationError) {
-        if (!error.correlationId) {
-          error.correlationId = correlationId;
-        }
-        throw error;
-      }
-      throw normalizeMsError(error, { correlationId });
-    }
-  }
+  const callRepository = createRepositoryCaller();
 
   return {
     findAll(query, headers, correlationId) {
@@ -69,7 +56,7 @@ function createPathsService(repository) {
         callRepository(
           () => repository.findEndPoints(id, headers),
           correlationId
-        )
+        ),
       ]);
 
       return { route, firstMeetingPoint, endpoints };
@@ -96,19 +83,19 @@ function createPathsService(repository) {
       );
     },
 
+    notifyStatus(data, headers, correlationId) {
+      return callRepository(
+        () => repository.notifyStatus(data, headers),
+        correlationId
+      );
+    },
+
     validateFirstMeetingPoint(id, data, headers, correlationId) {
       return callRepository(
         () => repository.validateFirstMeetingPoint(id, data, headers),
         correlationId
       );
     },
-
-    notifyStatus(data, headers, correlationId) {
-      return callRepository(
-        () => repository.notifyStatus(data, headers),
-        correlationId
-      );
-    }
   };
 }
 

@@ -8,6 +8,8 @@ class CommunicationError extends Error {
     details = null,
     durationMs = null,
     correlationId = null,
+    upstreamCode = null,
+    upstreamHeaders = null,
     raw = null,
   } = {}) {
     super(message);
@@ -19,6 +21,8 @@ class CommunicationError extends Error {
     this.details = details;
     this.durationMs = durationMs;
     this.correlationId = correlationId;
+    this.upstreamCode = upstreamCode;
+    this.upstreamHeaders = upstreamHeaders;
     this.raw = raw;
   }
 }
