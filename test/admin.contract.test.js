@@ -60,6 +60,8 @@ async function startApp(services = {}) {
 
   const server = createApp({
     pathsService,
+    authService: services.authService,
+    usersService: services.usersService,
     routesService,
     routesOrchestrator: services.routesOrchestrator,
     operationsService,
@@ -164,6 +166,46 @@ test("admin_routes publica el resumen de ruta en /admin/routes/{id}/overview", a
     route: { id: "3" },
     firstMeetingPoint: null,
   });
+});
+
+test("los alias administrativos reenvían a auth y admin_users", async (t) => {
+  const calls = [];
+  const record = (name) => async (...args) => {
+    calls.push([name, ...args]);
+    return { ok: true };
+  };
+  const harness = await startApp({
+    authService: { login: record("login") },
+    usersService: {
+      listGuides: record("listGuides"),
+      listStudents: record("listStudents"),
+      search: record("search"),
+    },
+  });
+  t.after(() => harness.close());
+
+  const login = await fetch(`${harness.baseUrl}/api/v1/admin/auth/login`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ username: "guia", password: "secreto" }),
+  });
+  assert.equal(login.status, 200);
+  assert.equal(calls.at(-1)[0], "login");
+  assert.deepEqual(calls.at(-1)[1], { username: "guia", password: "secreto" });
+
+  const guides = await fetch(`${harness.baseUrl}/api/v1/admin/guides`);
+  assert.equal(guides.status, 200);
+  assert.equal(calls.at(-1)[0], "listGuides");
+
+  const students = await fetch(`${harness.baseUrl}/api/v1/admin/students`);
+  assert.equal(students.status, 200);
+  assert.equal(calls.at(-1)[0], "listStudents");
+
+  const search = await fetch(
+    `${harness.baseUrl}/api/v1/admin/search?type=CC&number=123`
+  );
+  assert.equal(search.status, 200);
+  assert.equal(calls.at(-1)[0], "search");
 });
 
 test("admin_operations se publica bajo /api/v1/admin y valida ids numéricos", async (t) => {
