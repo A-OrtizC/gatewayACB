@@ -33,11 +33,8 @@ function createUnavailableRouter() {
   router.post("/admin/routes/:code/submit", unavailable);
   router.post("/admin/routes/:code/approve", unavailable);
   router.post("/admin/routes/:code/reject", unavailable);
-  router.get("/admin/routes/:code/attendance", unavailable);
 
-  router.get("/admin/trips", unavailable);
   router.post("/admin/trips/:id/executors", unavailable);
-  router.post("/admin/trips/:id/attendance", unavailable);
 
   router.delete("/admin/students/:id", unavailable);
   router.delete("/admin/guides/:id", unavailable);

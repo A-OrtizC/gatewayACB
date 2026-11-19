@@ -1,6 +1,6 @@
 const { buildRequestContext, sendResult } = require("../utils/requestContext");
 
-function createRoutesController(service, orchestrator) {
+function createRoutesController(service, orchestrator, studentsOrchestrator, attendanceOrchestrator) {
   return {
     // Routes
     async listRoutes(req, res) {
@@ -87,6 +87,18 @@ function createRoutesController(service, orchestrator) {
       sendResult(res, result);
     },
 
+    async getRouteAttendanceHistory(req, res) {
+      const context = buildRequestContext(req);
+      const result = await attendanceOrchestrator.history(
+        req.params.routeId,
+        req.query.from,
+        req.query.to,
+        context.headers,
+        context.correlationId
+      );
+      sendResult(res, result);
+    },
+
     async createMeetingPoint(req, res) {
       const context = buildRequestContext(req);
       const result = await service.createMeetingPoint(
@@ -143,7 +155,7 @@ function createRoutesController(service, orchestrator) {
     // Students
     async listStudentsByRoute(req, res) {
       const context = buildRequestContext(req);
-      const result = await service.listStudentsByRoute(
+      const result = await studentsOrchestrator.listByRoute(
         req.params.routeId,
         context.headers,
         context.correlationId
@@ -153,7 +165,7 @@ function createRoutesController(service, orchestrator) {
 
     async assignStudentToRoute(req, res) {
       const context = buildRequestContext(req);
-      const result = await service.assignStudentToRoute(
+      const result = await studentsOrchestrator.create(
         req.params.routeId,
         req.body,
         context.headers,
@@ -270,7 +282,7 @@ function createRoutesController(service, orchestrator) {
     // que pertenece al servicio admin_users.
     async getRouteStudent(req, res) {
       const context = buildRequestContext(req);
-      const result = await service.getStudent(
+      const result = await studentsOrchestrator.getOne(
         req.params.id,
         context.headers,
         context.correlationId
@@ -280,7 +292,7 @@ function createRoutesController(service, orchestrator) {
 
     async updateRouteStudent(req, res) {
       const context = buildRequestContext(req);
-      const result = await service.updateStudent(
+      const result = await studentsOrchestrator.update(
         req.params.id,
         req.body,
         context.headers,

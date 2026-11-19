@@ -92,6 +92,13 @@ function createRoutesService(repository) {
       );
     },
 
+    listRouteStudentsMeetingPoints(routeId, headers, correlationId) {
+      return callRepository(
+        () => repository.listRouteStudentsMeetingPoints(routeId, headers),
+        correlationId
+      );
+    },
+
     assignStudentToRoute(routeId, data, headers, correlationId) {
       return callRepository(
         () => repository.assignStudentToRoute(routeId, data, headers),

@@ -1,8 +1,19 @@
 const { buildRequestContext, sendResult } = require("../utils/requestContext");
 
-function createOperationsController(service, orchestrator) {
+function createOperationsController(service, orchestrator, attendanceOrchestrator) {
   return {
     // Trips
+    async listTrips(req, res) {
+      const context = buildRequestContext(req);
+      const result = await orchestrator.list(
+        req.query.date,
+        req.query.guideId,
+        context.headers,
+        context.correlationId
+      );
+      sendResult(res, result);
+    },
+
     async createTrip(req, res) {
       const context = buildRequestContext(req);
       const result = await service.createTrip(
@@ -15,7 +26,7 @@ function createOperationsController(service, orchestrator) {
 
     async getTrip(req, res) {
       const context = buildRequestContext(req);
-      const result = await service.getTrip(
+      const result = await orchestrator.get(
         req.params.tripId,
         context.headers,
         context.correlationId
@@ -47,7 +58,7 @@ function createOperationsController(service, orchestrator) {
 
     async getTripByRouteAndDate(req, res) {
       const context = buildRequestContext(req);
-      const result = await service.getTripByRouteAndDate(
+      const result = await orchestrator.getByRouteAndDate(
         req.params.routeId,
         req.query.date,
         context.headers,
@@ -58,9 +69,8 @@ function createOperationsController(service, orchestrator) {
 
     async startTrip(req, res) {
       const context = buildRequestContext(req);
-      const result = await service.startTrip(
+      const result = await orchestrator.start(
         req.params.tripId,
-        req.body,
         context.headers,
         context.correlationId
       );
@@ -70,9 +80,8 @@ function createOperationsController(service, orchestrator) {
     // El componente Go rechaza cualquier cuerpo en finish; no se reenvía nada.
     async finishTrip(req, res) {
       const context = buildRequestContext(req);
-      const result = await service.finishTrip(
+      const result = await orchestrator.finish(
         req.params.tripId,
-        undefined,
         context.headers,
         context.correlationId
       );
@@ -125,8 +134,33 @@ function createOperationsController(service, orchestrator) {
 
     async listStudentAttendance(req, res) {
       const context = buildRequestContext(req);
-      const result = await service.listStudentAttendance(
+      const result = await attendanceOrchestrator.listByTrip(
         req.params.tripId,
+        context.headers,
+        context.correlationId
+      );
+      sendResult(res, result);
+    },
+
+    // Guarda la asistencia de un punto: inicializa el padron y actualiza cada
+    // estudiante. Reemplaza el 501 que existia para el contrato de la UI.
+    async saveStudentAttendance(req, res) {
+      const context = buildRequestContext(req);
+      const result = await attendanceOrchestrator.save(
+        req.params.tripId,
+        req.body,
+        context.headers,
+        context.correlationId
+      );
+      sendResult(res, result, 201);
+    },
+
+    async getRouteAttendanceHistory(req, res) {
+      const context = buildRequestContext(req);
+      const result = await attendanceOrchestrator.history(
+        req.params.routeId,
+        req.query.from,
+        req.query.to,
         context.headers,
         context.correlationId
       );

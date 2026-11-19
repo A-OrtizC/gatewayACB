@@ -38,6 +38,19 @@ Reglas de arquitectura:
 
 `webadminACB` llama al gateway directamente con `/api/v1/*`.
 
+## Contratos traducidos por el gateway
+
+Tres casos unen varios microservicios y se resuelven en orquestadores:
+
+| Contrato público | Servicios | Traducción |
+| --- | --- | --- |
+| `GET/POST /api/v1/admin/routes/{routeId}/students` | `admin_users` + `admin_routes` | Une el detalle del estudiante, su matrícula y sus puntos de encuentro. El alta crea el usuario, lo matricula y asigna los puntos. |
+| `GET/POST /api/v1/admin/trips/{tripId}/attendance` y `GET /api/v1/admin/routes/{routeId}/attendance` | `admin_operations` | Inicializa el padrón, guarda `01`/`00` por estudiante y normaliza el historial. |
+| `GET /api/v1/admin/trips?date=` | `admin_operations` | Normaliza la entidad `Trip` al modelo de `presentationACB`. |
+
+Las rutas administrativas se identifican siempre por `routeId` numérico. El
+`routeCode` se usa para mostrar y para las llamadas geográficas a `acb_path_lo`.
+
 ## Endpoints sin contrato backend
 
 `presentationACB` conserva pantallas construidas contra un mock eliminado. Las
@@ -45,9 +58,8 @@ rutas que ningún microservicio implementa responden `501 FEATURE_UNAVAILABLE` e
 lugar de `404`, para distinguir "no existe el contrato" de "ruta mal escrita":
 
 - `zones`, `leaders`, `arrivals`.
-- Listado de `trips` y `trips/{id}/executors`.
+- `trips/{id}/executors`.
 - Ciclo de vida de ruta (`submit`, `approve`, `reject`, `status`, `reviewNotes`).
-- Asistencia por código de ruta (`routes/{code}/attendance`).
 - `GET /status` y `GET /positions/latest`.
 - `DELETE` de estudiantes y guías en `admin_users`.
 

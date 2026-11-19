@@ -75,6 +75,12 @@ const RoutesRepository = {
     return get("routes", `${BASE_URL}/routes/${routeId}/students`, { headers });
   },
 
+  listRouteStudentsMeetingPoints: (routeId, headers = {}) => {
+    return get("routes", `${BASE_URL}/routes/${routeId}/students/meeting-points`, {
+      headers,
+    });
+  },
+
   assignStudentToRoute: (routeId, data, headers = {}) => {
     return post("routes", `${BASE_URL}/routes/${routeId}/students`, data, { headers });
   },

@@ -15,6 +15,8 @@ const createRoutesService = require("./logic/services/routes.service");
 const createGpsService = require("./logic/services/gps.service");
 const createTripsOrchestrator = require("./logic/orchestrators/trips.orchestrator");
 const createRoutesOrchestrator = require("./logic/orchestrators/routes.orchestrator");
+const createStudentsOrchestrator = require("./logic/orchestrators/students.orchestrator");
+const createAttendanceOrchestrator = require("./logic/orchestrators/attendance.orchestrator");
 
 const createPathsController = require("./presentation/controllers/paths.controller");
 const createAuthController = require("./presentation/controllers/auth.controller");
@@ -57,6 +59,8 @@ function createApp({
   gpsService,
   tripsOrchestrator,
   routesOrchestrator,
+  studentsOrchestrator,
+  attendanceOrchestrator,
 } = {}) {
   const app = express();
 
@@ -64,22 +68,41 @@ function createApp({
   const operations =
     operationsService || createOperationsService(operationsRepository);
   const routes = routesService || createRoutesService(routesRepository);
+  const users = usersService || createUsersService(usersRepository);
   const gps = gpsService || createGpsService(gpsRepository);
+
+  const trips = {
+    ...createTripsOrchestrator(operations),
+    ...(tripsOrchestrator || {}),
+  };
+  const routesOverview = {
+    ...createRoutesOrchestrator(routes),
+    ...(routesOrchestrator || {}),
+  };
+  const students = {
+    ...createStudentsOrchestrator({ usersService: users, routesService: routes }),
+    ...(studentsOrchestrator || {}),
+  };
+  const attendance = {
+    ...createAttendanceOrchestrator(operations),
+    ...(attendanceOrchestrator || {}),
+  };
 
   const pathsController = createPathsController(paths);
   const authController = createAuthController(
     authService || createAuthService(authRepository)
   );
-  const usersController = createUsersController(
-    usersService || createUsersService(usersRepository)
-  );
+  const usersController = createUsersController(users);
   const operationsController = createOperationsController(
     operations,
-    tripsOrchestrator || createTripsOrchestrator(operations)
+    trips,
+    attendance
   );
   const routesController = createRoutesController(
     routes,
-    routesOrchestrator || createRoutesOrchestrator(routes)
+    routesOverview,
+    students,
+    attendance
   );
   const gpsController = createGpsController(gps);
 

@@ -3,6 +3,7 @@ const {
   validateJsonBody,
   validateJsonArray,
   validateNumericParam,
+  validateQuery,
 } = require("../middlewares/validation");
 
 const tripId = validateNumericParam("tripId", "El identificador de viaje no es válido.");
@@ -18,6 +19,7 @@ const studentId = validateNumericParam(
 function createTripsRouter(controller) {
   const router = express.Router();
 
+  router.get("/", validateQuery, controller.listTrips);
   router.get("/by-route/:routeId", validateNumericParam("routeId"), controller.getTripByRouteAndDate);
   router.post("/", validateJsonBody, controller.createTrip);
   router.get("/:tripId/overview", tripId, controller.getTripOverview);
@@ -40,6 +42,12 @@ function createTripsRouter(controller) {
     controller.initializeRoster
   );
   router.get("/:tripId/attendance", tripId, controller.listStudentAttendance);
+  router.post(
+    "/:tripId/attendance",
+    tripId,
+    validateJsonBody,
+    controller.saveStudentAttendance
+  );
   router.put(
     "/:tripId/attendance/:studentId",
     tripId,

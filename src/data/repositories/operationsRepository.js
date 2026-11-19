@@ -69,6 +69,18 @@ const OperationsRepository = {
       query: { date },
     });
   },
+  listByDate: (date, guideId, headers = {}) => {
+    return get("operations", `${BASE_URL}/trips`, {
+      headers,
+      query: { date, guideId },
+    });
+  },
+  listAttendanceByRoute: (routeId, from, to, headers = {}) => {
+    return get("operations", `${BASE_URL}/trips/by-route/${routeId}/attendance`, {
+      headers,
+      query: { from, to },
+    });
+  },
   startTrip: (tripId, data, headers = {}) => {
     return post("operations", `${BASE_URL}/trips/${tripId}/start`, data, { headers });
   },

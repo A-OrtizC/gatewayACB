@@ -133,13 +133,16 @@ test("API HTTP de operaciones", async (t) => {
 
     assert.equal(response.status, 200);
     assert.deepEqual(await response.json(), {
-      id: 12,
-      status: "FINISHED",
+      tripId: 12,
+      startedAt: null,
+      endedAt: null,
+      durationMinutes: 0,
+      presentCount: 0,
+      enrolledCount: 1,
     });
-    const [name, tripId, body] = calls.at(-1);
-    assert.equal(name, "finishTrip");
-    assert.equal(tripId, "12");
-    assert.equal(body, undefined);
+    const finishCall = calls.find((call) => call[0] === "finishTrip");
+    assert.equal(finishCall[1], "12");
+    assert.equal(finishCall[2], undefined);
   });
 
   await t.test("minuted devuelve 204 y check-in de escritura no está expuesto", async () => {

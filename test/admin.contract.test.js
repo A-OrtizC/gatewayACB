@@ -64,6 +64,8 @@ async function startApp(services = {}) {
     usersService: services.usersService,
     routesService,
     routesOrchestrator: services.routesOrchestrator,
+    studentsOrchestrator: services.studentsOrchestrator,
+    attendanceOrchestrator: services.attendanceOrchestrator,
     operationsService,
     tripsOrchestrator: services.tripsOrchestrator,
     gpsService,
@@ -99,6 +101,9 @@ test("admin_routes se publica bajo /api/v1/admin y reenvía la ruta real", async
       deleteMeetingPoint: record("deleteMeetingPoint", null),
       getRosterAtMeetingPoint: record("getRosterAtMeetingPoint"),
       getStudent: record("getStudent"),
+    },
+    studentsOrchestrator: {
+      getOne: record("getOne"),
     },
   });
   t.after(() => harness.close());
@@ -137,7 +142,7 @@ test("admin_routes se publica bajo /api/v1/admin y reenvía la ruta real", async
     `${harness.baseUrl}/api/v1/admin/route-students/5`
   );
   assert.equal(routeStudent.status, 200);
-  assert.equal(calls.at(-1)[0], "getStudent");
+  assert.equal(calls.at(-1)[0], "getOne");
 
   const removed = await fetch(`${harness.baseUrl}/api/v1/admin/meeting-points/9`, {
     method: "DELETE",
@@ -410,7 +415,6 @@ test("los endpoints sin contrato backend responden 501 explícito", async (t) =>
     ["GET", "/api/v1/admin/zones"],
     ["GET", "/api/v1/admin/leaders"],
     ["GET", "/api/v1/admin/arrivals"],
-    ["GET", "/api/v1/admin/trips"],
     ["POST", "/api/v1/admin/routes/MM04/submit"],
     ["DELETE", "/api/v1/admin/students/5"],
     ["GET", "/api/v1/status"],

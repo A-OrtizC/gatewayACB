@@ -31,6 +31,20 @@ function createOperationsService(repository) {
       );
     },
 
+    listTripsByDate(date, guideId, headers, correlationId) {
+      return callRepository(
+        () => repository.listByDate(date, guideId, headers),
+        correlationId
+      );
+    },
+
+    listAttendanceByRoute(routeId, from, to, headers, correlationId) {
+      return callRepository(
+        () => repository.listAttendanceByRoute(routeId, from, to, headers),
+        correlationId
+      );
+    },
+
     startTrip(tripId, data, headers, correlationId) {
       return callRepository(
         () => repository.startTrip(tripId, data, headers),

@@ -14,6 +14,12 @@ function createAdminRouter(controller) {
   router.get("/routes", validateQuery, controller.listRoutes);
   router.post("/routes", validateJsonBody, controller.createRoute);
   router.get("/routes/:id/overview", id, controller.getRouteOverview);
+  router.get(
+    "/routes/:routeId/attendance",
+    validateNumericParam("routeId"),
+    validateQuery,
+    controller.getRouteAttendanceHistory
+  );
   router.get("/routes/:routeId/meeting-points", validateNumericParam("routeId"), controller.listMeetingPointsForRoute);
   router.post(
     "/routes/:routeId/meeting-points",

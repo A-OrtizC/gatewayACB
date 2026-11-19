@@ -261,16 +261,44 @@ function buildExtendedPaths() {
       get: operation({
         tag: "AdminRoutes",
         summary: "Listar estudiantes matriculados en la ruta",
+        description:
+          "Respuesta enriquecida por el gateway: une la matrícula de admin_routes con el detalle de admin_users y los puntos de encuentro de cada estudiante.",
         operationId: "listRouteStudents",
         params: [adminId],
       }),
       post: operation({
         tag: "AdminRoutes",
         summary: "Matricular estudiante en la ruta",
+        description:
+          "Crea el usuario en admin_users, lo matricula en admin_routes y asigna sus puntos de encuentro en una sola operación.",
         operationId: "assignRouteStudent",
         params: [adminId],
         body: true,
         responses: { 201: jsonResponse("Estudiante matriculado.") },
+      }),
+    },
+    "/admin/routes/{id}/attendance": {
+      get: operation({
+        tag: "AdminRoutes",
+        summary: "Consultar el historial de asistencia de la ruta",
+        operationId: "getRouteAttendanceHistory",
+        params: [
+          adminId,
+          {
+            name: "from",
+            in: "query",
+            required: true,
+            description: "Fecha inicial en formato ISO 8601 (YYYY-MM-DD).",
+            schema: { type: "string", format: "date" },
+          },
+          {
+            name: "to",
+            in: "query",
+            required: true,
+            description: "Fecha final en formato ISO 8601 (YYYY-MM-DD).",
+            schema: { type: "string", format: "date" },
+          },
+        ],
       }),
     },
     "/admin/routes/{id}/meeting-points": {
@@ -334,7 +362,7 @@ function buildExtendedPaths() {
         tag: "AdminRoutes",
         summary: "Consultar matrícula de estudiante en ruta",
         description:
-          "Se publica como route-students para no chocar con /admin/students, que pertenece a admin_users.",
+          "Se publica como route-students para no chocar con /admin/students, que pertenece a admin_users. Devuelve el detalle enriquecido con datos y puntos de encuentro.",
         operationId: "getRouteStudent",
         params: [adminId],
       }),
@@ -371,6 +399,30 @@ function buildExtendedPaths() {
 
     // ---- admin_operations: viajes ----
     "/admin/trips": {
+      get: operation({
+        tag: "Operations",
+        summary: "Listar viajes por fecha",
+        description:
+          "Devuelve los viajes de una fecha con el formato normalizado que consume presentationACB.",
+        operationId: "listTrips",
+        params: [
+          {
+            name: "date",
+            in: "query",
+            required: true,
+            description: "Fecha de los viajes en formato ISO 8601 (YYYY-MM-DD).",
+            schema: { type: "string", format: "date" },
+          },
+          {
+            name: "guideId",
+            in: "query",
+            required: false,
+            description:
+              "Filtra los viajes de un guía. Si el token pertenece a un GUIDE, el backend fuerza su propio identificador.",
+            schema: { type: "integer", format: "int64", minimum: 1 },
+          },
+        ],
+      }),
       post: operation({
         tag: "Operations",
         summary: "Crear viaje",
@@ -493,6 +545,16 @@ function buildExtendedPaths() {
         summary: "Consultar asistencia del viaje",
         operationId: "listAttendance",
         params: [tripId],
+      }),
+      post: operation({
+        tag: "Operations",
+        summary: "Guardar la asistencia de un punto",
+        description:
+          "Inicializa el padrón y actualiza el estado de cada estudiante. present=true se guarda como 01 y present=false como 00.",
+        operationId: "saveAttendance",
+        params: [tripId],
+        body: true,
+        responses: { 201: jsonResponse("Asistencia guardada.") },
       }),
     },
     "/admin/trips/{tripId}/attendance/{studentId}": {
