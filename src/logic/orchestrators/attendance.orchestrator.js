@@ -20,7 +20,7 @@ function normalizeRecords(records) {
   if (!Array.isArray(records) || records.length === 0) {
     throw validationError(
       "GW_ATTENDANCE_EMPTY",
-      "La asistencia debe incluir al menos un estudiante."
+      "La asistencia debe incluir al menos un estudiante.",
     );
   }
   return records.map((record, index) => {
@@ -33,7 +33,7 @@ function normalizeRecords(records) {
       throw validationError(
         "GW_ATTENDANCE_INVALID",
         "Cada registro de asistencia requiere studentId y studentName.",
-        { index }
+        { index },
       );
     }
     return {
@@ -71,16 +71,9 @@ function createAttendanceOrchestrator(operationsService) {
     async save(tripId, payload, headers, correlationId) {
       const records = normalizeRecords(payload?.records);
 
-      await operationsService.initializeRoster(
-        tripId,
-        records.map((record) => ({
-          studentId: record.studentId,
-          studentName: record.studentName,
-        })),
-        headers,
-        correlationId
-      );
-
+      // Do not initialize the roster here: that endpoint is LEADER/MANAGER
+      // only. registerOrUpdateAttendance creates the row when needed and
+      // authorizes the guide assigned to the trip.
       const work = Promise.allSettled(
         records.map((record) =>
           operationsService.registerOrUpdateAttendance(
@@ -91,9 +84,9 @@ function createAttendanceOrchestrator(operationsService) {
               statusCode: record.present ? STATUS_PRESENT : STATUS_ABSENT,
             },
             headers,
-            correlationId
-          )
-        )
+            correlationId,
+          ),
+        ),
       );
 
       let results;
@@ -132,7 +125,7 @@ function createAttendanceOrchestrator(operationsService) {
       const rows = await operationsService.listStudentAttendance(
         tripId,
         headers,
-        correlationId
+        correlationId,
       );
       return (rows ?? []).map(toAttendanceRow);
     },
@@ -141,13 +134,13 @@ function createAttendanceOrchestrator(operationsService) {
       if (!from || !to) {
         throw validationError(
           "GW_ATTENDANCE_RANGE_REQUIRED",
-          "El historial de asistencia requiere las fechas from y to."
+          "El historial de asistencia requiere las fechas from y to.",
         );
       }
       if (from > to) {
         throw validationError(
           "GW_ATTENDANCE_RANGE_INVALID",
-          "La fecha inicial no puede ser posterior a la final."
+          "La fecha inicial no puede ser posterior a la final.",
         );
       }
       const rows = await operationsService.listAttendanceByRoute(
@@ -155,7 +148,7 @@ function createAttendanceOrchestrator(operationsService) {
         from,
         to,
         headers,
-        correlationId
+        correlationId,
       );
       return (rows ?? []).map(toHistoryRow);
     },
