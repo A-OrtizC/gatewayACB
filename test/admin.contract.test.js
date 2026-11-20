@@ -1,6 +1,7 @@
 const assert = require("node:assert/strict");
 const { once } = require("node:events");
 const test = require("node:test");
+const jwt = require("jsonwebtoken");
 
 process.env.AUTH_SERVICE_URL = "http://auth.test";
 process.env.USERS_SERVICE_URL = "http://users.test";
@@ -9,6 +10,8 @@ process.env.ROUTES_SERVICE_URL = "http://routes.test";
 process.env.PATHS_SERVICE_URL = "http://paths.test";
 process.env.GPS_SERVICE_URL = "http://gps.test";
 process.env.GPS_INTERNAL_TOKEN = "internal-token";
+process.env.ACB_JWT_SECRET = "test-jwt-secret-0123456789abcdef";
+process.env.GPS_POLICY_ID = "policy-1";
 
 const { createApp } = require("../src/app");
 const routesRepository = require("../src/data/repositories/routesRepository");
@@ -327,10 +330,18 @@ test("el tracking GPS se enruta solo al componente Go", async (t) => {
   };
   const harness = await startApp({ gpsService });
   t.after(() => harness.close());
+  const auth = {
+    authorization: `Bearer ${jwt.sign(
+      { sub: "1", role: "GUIDE" },
+      process.env.ACB_JWT_SECRET,
+      { algorithm: "HS256" }
+    )}`,
+  };
 
   const created = await fetch(`${harness.baseUrl}/api/v1/tracking-sessions`, {
     method: "POST",
     headers: {
+      ...auth,
       "content-type": "application/json",
       "idempotency-key": "idem-1",
     },
@@ -338,18 +349,23 @@ test("el tracking GPS se enruta solo al componente Go", async (t) => {
   });
   assert.equal(created.status, 201);
   assert.equal(calls.at(-1)[0], "createTrackingSession");
-  assert.deepEqual(calls.at(-1)[1], { guide_id: "g-1", route_id: "r-1" });
+  assert.deepEqual(calls.at(-1)[1], {
+    guide_id: "1",
+    route_id: "r-1",
+    policy_id: "policy-1",
+  });
   assert.equal(calls.at(-1)[2], "idem-1");
 
   const latest = await fetch(
-    `${harness.baseUrl}/api/v1/tracking-sessions/t-1/latest-position`
+    `${harness.baseUrl}/api/v1/tracking-sessions/t-1/latest-position`,
+    { headers: auth }
   );
   assert.equal(latest.status, 200);
   assert.equal(calls.at(-1)[0], "getLatestPosition");
 
   const disabled = await fetch(
     `${harness.baseUrl}/api/v1/tracking-sessions/t-1/disable`,
-    { method: "PATCH" }
+    { method: "PATCH", headers: auth }
   );
   assert.equal(disabled.status, 200);
   assert.equal(calls.at(-1)[0], "disableTrackingSession");

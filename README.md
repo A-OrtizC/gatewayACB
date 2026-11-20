@@ -5,17 +5,24 @@ traduce el contrato público a los servicios reales, propaga `Authorization` y
 `x-correlation-id`, y normaliza los errores en el formato:
 
 ```json
-{ "error": { "code": "...", "message": "...", "correlationId": "...", "service": "..." } }
+{
+  "error": {
+    "code": "...",
+    "message": "...",
+    "correlationId": "...",
+    "service": "..."
+  }
+}
 ```
 
 ## Contrato público
 
-| Prefijo | Upstream | Contenido |
-| --- | --- | --- |
-| `/api/v1/auth`, `/api/v1/{guides,students,search}` | `auth` + `admin_users` | Login, guías, estudiantes, acudientes y búsqueda de personas. |
-| `/api/v1/admin/*` | `admin_routes` + `admin_operations` | Colegios, rutas administrativas, matrícula, puntos de encuentro, viajes, asistencia, eventos, faltas y check-ins. |
-| `/api/v1/{routes,meeting-points,imports,status}` | `acb_path_lo` (Python) | Rutas geográficas, puntos de encuentro, importación KMZ, validación de PE01 y reportes de estado. |
-| `/api/v1/tracking-sessions/*` | `acb_gps_lo` (Go) | Sesiones de tracking, observaciones, posiciones, control y cierre. |
+| Prefijo                                            | Upstream                            | Contenido                                                                                                         |
+| -------------------------------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `/api/v1/auth`, `/api/v1/{guides,students,search}` | `auth` + `admin_users`              | Login, guías, estudiantes, acudientes y búsqueda de personas.                                                     |
+| `/api/v1/admin/*`                                  | `admin_routes` + `admin_operations` | Colegios, rutas administrativas, matrícula, puntos de encuentro, viajes, asistencia, eventos, faltas y check-ins. |
+| `/api/v1/{routes,meeting-points,imports,status}`   | `acb_path_lo` (Python)              | Rutas geográficas, puntos de encuentro, importación KMZ, validación de PE01 y reportes de estado.                 |
+| `/api/v1/tracking-sessions/*`                      | `acb_gps_lo` (Go)                   | Sesiones de tracking, observaciones, posiciones, control y cierre.                                                |
 
 Reglas de arquitectura:
 
@@ -31,10 +38,10 @@ Reglas de arquitectura:
 
 `presentationACB` publica dos prefijos y Nginx los reescribe así:
 
-| Cliente | Nginx | Gateway |
-| --- | --- | --- |
+| Cliente        | Nginx             | Gateway                             |
+| -------------- | ----------------- | ----------------------------------- |
 | `/api/admin/*` | `/api/v1/admin/*` | `admin_routes` + `admin_operations` |
-| `/api/geo/*` | `/api/v1/*` | `acb_path_lo` y `acb_gps_lo` |
+| `/api/geo/*`   | `/api/v1/*`       | `acb_path_lo` y `acb_gps_lo`        |
 
 `webadminACB` llama al gateway directamente con `/api/v1/*`.
 
@@ -42,11 +49,11 @@ Reglas de arquitectura:
 
 Tres casos unen varios microservicios y se resuelven en orquestadores:
 
-| Contrato público | Servicios | Traducción |
-| --- | --- | --- |
-| `GET/POST /api/v1/admin/routes/{routeId}/students` | `admin_users` + `admin_routes` | Une el detalle del estudiante, su matrícula y sus puntos de encuentro. El alta crea el usuario, lo matricula y asigna los puntos. |
-| `GET/POST /api/v1/admin/trips/{tripId}/attendance` y `GET /api/v1/admin/routes/{routeId}/attendance` | `admin_operations` | Inicializa el padrón, guarda `01`/`00` por estudiante y normaliza el historial. |
-| `GET /api/v1/admin/trips?date=` | `admin_operations` | Normaliza la entidad `Trip` al modelo de `presentationACB`. |
+| Contrato público                                                                                     | Servicios                      | Traducción                                                                                                                        |
+| ---------------------------------------------------------------------------------------------------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| `GET/POST /api/v1/admin/routes/{routeId}/students`                                                   | `admin_users` + `admin_routes` | Une el detalle del estudiante, su matrícula y sus puntos de encuentro. El alta crea el usuario, lo matricula y asigna los puntos. |
+| `GET/POST /api/v1/admin/trips/{tripId}/attendance` y `GET /api/v1/admin/routes/{routeId}/attendance` | `admin_operations`             | Inicializa el padrón, guarda `01`/`00` por estudiante y normaliza el historial.                                                   |
+| `GET /api/v1/admin/trips?date=`                                                                      | `admin_operations`             | Normaliza la entidad `Trip` al modelo de `presentationACB`.                                                                       |
 
 Las rutas administrativas se identifican siempre por `routeId` numérico. El
 `routeCode` se usa para mostrar y para las llamadas geográficas a `acb_path_lo`.
@@ -67,16 +74,22 @@ Estas brechas se cierran en los microservicios, no en el gateway.
 
 ## Variables de entorno
 
-| Variable | Descripción |
-| --- | --- |
-| `AUTH_SERVICE_URL` | Origen de `acb_auth`. |
-| `USERS_SERVICE_URL` | Origen de `acb_admin_users`. |
-| `OPERATIONS_SERVICE_URL` | Origen de `acb_admin_operation`. |
-| `ROUTES_SERVICE_URL` | Origen de `acb_admin_routes`. |
-| `PATHS_SERVICE_URL` | Origen de `acb_path_lo` (Python). |
-| `GPS_SERVICE_URL` | Origen de `acb_gps_lo` (Go). |
-| `GPS_INTERNAL_TOKEN` | Credencial interna para control/lectura del GPS. Debe coincidir con `GPS_GATEWAY_INTERNAL_TOKEN` del Go. |
-| `PORT` | Puerto del gateway (5062 por defecto). |
+| Variable                 | Descripción                                                                                              |
+| ------------------------ | -------------------------------------------------------------------------------------------------------- |
+| `AUTH_SERVICE_URL`       | Origen de `acb_auth`.                                                                                    |
+| `USERS_SERVICE_URL`      | Origen de `acb_admin_users`.                                                                             |
+| `OPERATIONS_SERVICE_URL` | Origen de `acb_admin_operation`.                                                                         |
+| `ROUTES_SERVICE_URL`     | Origen de `acb_admin_routes`.                                                                            |
+| `PATHS_SERVICE_URL`      | Origen de `acb_path_lo` (Python).                                                                        |
+| `GPS_SERVICE_URL`        | Origen de `acb_gps_lo` (Go).                                                                             |
+| `GPS_INTERNAL_TOKEN`     | Credencial interna para control/lectura del GPS. Debe coincidir con `GPS_GATEWAY_INTERNAL_TOKEN` del Go. |
+| `ACB_JWT_SECRET`         | Secreto HS256 compartido con adminACB; autoriza creación/lectura/cierre de tracking.                     |
+| `GPS_POLICY_ID`          | Política que el gateway impone al crear una sesión de tracking.                                          |
+| `PORT`                   | Puerto del gateway (5062 por defecto).                                                                   |
+
+`POST /api/v1/tracking-sessions` exige un JWT de guía; el gateway reemplaza
+`guide_id` con el sujeto del token y `policy_id` con `GPS_POLICY_ID`. Las
+observaciones siguen autenticadas únicamente con el Bearer de sesión GPS.
 
 El componente Go debe arrancar con `GPS_CONTROL_API_ENABLED=true` y
 `GPS_READ_API_ENABLED=true` para que las rutas de tracking respondan. Sin esas

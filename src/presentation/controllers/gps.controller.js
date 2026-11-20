@@ -3,14 +3,32 @@ const {
   sendResult,
   sendUpstreamResult,
 } = require("../utils/requestContext");
+const { HttpError } = require("../../data/clients/httpClient");
 
 function createGpsController(service) {
   return {
     // Conserva 201 (nueva) y 200 (replay) del componente Go.
     async createTrackingSession(req, res) {
       const context = buildRequestContext(req);
+      const policyId = process.env.GPS_POLICY_ID;
+      if (!policyId) {
+        throw new HttpError(
+          "GPS_POLICY_ID no está configurado para crear sesiones de tracking.",
+          503,
+          "gps",
+          null,
+          { code: "SERVICE_NOT_CONFIGURED" }
+        );
+      }
+      const payload = {
+        ...req.body,
+        // The authenticated guide is authoritative; never trust body.guide_id.
+        guide_id: String(req.auth.id),
+        // The policy is a server-side deployment decision.
+        policy_id: policyId,
+      };
       const result = await service.createTrackingSession(
-        req.body,
+        payload,
         req.get("idempotency-key"),
         context.headers,
         context.correlationId
