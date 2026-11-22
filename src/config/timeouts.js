@@ -4,7 +4,8 @@ module.exports = {
     users: 5000,
     operations: 6000,
     routes: 5000,
-    gps: 3000,
+    // Go control may spend up to 5 s including its 3 s route lookup.
+    gps: 9000,
     paths: 5000,
   },
   defaults: {
