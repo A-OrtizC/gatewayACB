@@ -1,5 +1,6 @@
 const cluster = require('node:cluster');
 const os = require('node:os');
+const { ClusterMemoryStorePrimary } = require('@express-rate-limit/cluster-memory-store');
 const services = require('./config/services');
 services.assertConfigured();
 const app = require('./app');
@@ -8,6 +9,9 @@ const PORT = process.env.PORT || 5062;
 // Solo crear workers en modo producción o cuando se especifique CLUSTER_ENABLED=true
 if (cluster.isPrimary) {
   console.log(`[${process.pid}] Procesador principal - Inicio de la aplicación`);
+
+  // Contadores de rate limiting compartidos por todos los workers.
+  new ClusterMemoryStorePrimary().init();
   
   // Determinar el número de workers (núcleos disponibles)
   const numCPUs = os.cpus().length;
