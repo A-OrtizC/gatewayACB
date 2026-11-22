@@ -72,6 +72,32 @@ lugar de `404`, para distinguir "no existe el contrato" de "ruta mal escrita":
 
 Estas brechas se cierran en los microservicios, no en el gateway.
 
+## Rate limiting
+
+El gateway limita las solicitudes con una ventana fija (`express-rate-limit`).
+Con `src/server.cluster.js` los contadores viven en el proceso primario y los
+comparten todos los workers; con `src/server.js` quedan en memoria del proceso.
+
+| Límite  | Alcance                                                     | Clave del cliente                                                                                                                               |
+| ------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| General | Todas las rutas excepto `GET /api/v1/health`                | `trk:<trackingId>` para `POST .../observations`; si no, `user:<sub>` con un JWT válido (HS256, `ACB_JWT_SECRET`); si no, `ip:<ip del cliente>`. |
+| Login   | `POST /api/v1/auth/login` y `POST /api/v1/admin/auth/login` | `login:<ip>:<username>`, con el usuario sin espacios y en minúsculas. Ambas rutas comparten el conteo.                                          |
+
+La IP del cliente se toma de `X-Forwarded-For` solo cuando la conexión llega de
+un proxy de confianza (`TRUST_PROXY`). Las respuestas sujetas a límite incluyen
+las cabeceras `RateLimit` y `RateLimit-Policy`; al superarlo el gateway responde
+`429` con `Retry-After` y:
+
+```json
+{
+  "error": {
+    "code": "RATE_LIMITED",
+    "message": "Demasiadas solicitudes. Intenta de nuevo en 42 segundos.",
+    "correlationId": "..."
+  }
+}
+```
+
 ## Variables de entorno
 
 | Variable                 | Descripción                                                                                              |
@@ -85,6 +111,10 @@ Estas brechas se cierran en los microservicios, no en el gateway.
 | `GPS_INTERNAL_TOKEN`     | Credencial interna para control/lectura del GPS. Debe coincidir con `GPS_GATEWAY_INTERNAL_TOKEN` del Go. |
 | `ACB_JWT_SECRET`         | Secreto HS256 compartido con adminACB; autoriza creación/lectura/cierre de tracking.                     |
 | `GPS_POLICY_ID`          | Política que el gateway impone al crear una sesión de tracking.                                          |
+| `RATE_LIMIT_WINDOW_MS`   | Duración de la ventana de rate limiting en ms (60000 por defecto).                                       |
+| `RATE_LIMIT_MAX`         | Solicitudes por cliente y ventana (120 por defecto).                                                     |
+| `RATE_LIMIT_LOGIN_MAX`   | Intentos de login por IP + usuario y ventana (5 por defecto).                                            |
+| `TRUST_PROXY`            | Valor de `trust proxy` de Express (`loopback, linklocal, uniquelocal` por defecto).                      |
 | `PORT`                   | Puerto del gateway (5062 por defecto).                                                                   |
 
 `POST /api/v1/tracking-sessions` exige un JWT de guía; el gateway reemplaza
