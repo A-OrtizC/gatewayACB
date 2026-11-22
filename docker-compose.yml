@@ -16,6 +16,11 @@ services:
       NODE_ENV: development
       PORT: 5062
       PATHS_SERVICE_URL: https://geoloca-api:8000
+      GPS_SERVICE_URL: https://geoloca-gps:8080
+      AUTH_SERVICE_URL: https://acb-auth:8084
+      USERS_SERVICE_URL: https://acb-users:8083
+      ROUTES_SERVICE_URL: https://acb-routes:8082
+      OPERATIONS_SERVICE_URL: https://acb-operations:8081
       ACB_TLS_CERT_FILE: /run/acb-tls/gateway.crt
       ACB_TLS_KEY_FILE: /run/acb-tls/gateway.key
       NODE_EXTRA_CA_CERTS: /run/acb-tls/ca.crt
