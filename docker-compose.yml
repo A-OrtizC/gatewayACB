@@ -10,7 +10,7 @@ services:
       - .env
 
     ports:
-      - "5062:5062"
+      - "127.0.0.1:5062:5062"
 
     environment:
       NODE_ENV: development
