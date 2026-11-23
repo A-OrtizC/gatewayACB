@@ -46,7 +46,9 @@ const createAdminRouter = require("./presentation/routes/admin.routes");
 const createTrackingSessionsRouter = require("./presentation/routes/gps.routes");
 const createUnavailableRouter = require("./presentation/routes/unavailable.routes");
 
+const rateLimitConfig = require("./config/rateLimit");
 const requestContext = require("./presentation/middlewares/requestContext");
+const createRateLimiters = require("./presentation/middlewares/rateLimit");
 const errorHandler = require("./presentation/middlewares/errorHandler");
 const notFoundHandler = require("./presentation/middlewares/notFoundHandler");
 
@@ -61,8 +63,13 @@ function createApp({
   routesOrchestrator,
   studentsOrchestrator,
   attendanceOrchestrator,
+  rateLimit,
 } = {}) {
   const app = express();
+  const limitsConfig = { ...rateLimitConfig, ...rateLimit };
+  const limiters = createRateLimiters(limitsConfig);
+
+  app.set("trust proxy", limitsConfig.trustProxy);
 
   const paths = pathsService || createPathsService(pathsRepository);
   const operations =
@@ -107,7 +114,10 @@ function createApp({
   const gpsController = createGpsController(gps);
 
   app.use(requestContext);
+  app.use(limiters.general);
   app.use(express.json({ limit: "1mb" }));
+  // Una sola instancia en ambas rutas: el alias comparte el conteo de intentos.
+  app.post(["/api/v1/auth/login", "/api/v1/admin/auth/login"], limiters.login);
 
   if (process.env.NODE_ENV !== "production") {
     const docsRoutes = require("./presentation/routes/docs.routes");
