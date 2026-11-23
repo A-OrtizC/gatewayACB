@@ -144,8 +144,70 @@ docker network create acb-net   # una sola vez
 docker compose up -d --build
 ```
 
-El contenedor se une a `acb-net` y usa `extra_hosts` para alcanzar los servicios
-de `adminACB` publicados en el host.
+El contenedor se une a `acb-net` y usa los alias DNS de los servicios Java,
+Python y GPS. El despliegue Compose requiere `ACB_TLS_DIR` y un `.env` local;
+sirve HTTPS en `127.0.0.1:5062` y valida los certificados de sus destinos.
+
+## Development TLS Certificate Generation
+
+Los scripts de `gatewayACB/scripts/` generan certificados de **desarrollo para
+todo ACB**, no solo para Gateway. Requieren OpenSSL; Windows puede usar el de
+Git for Windows. Para crear `truststore.p12` para Java/MySQL también se requiere
+`keytool` (JDK) y `ACB_TLS_TRUSTSTORE_PASSWORD`, una contraseña local de al menos
+12 caracteres. Para crear un almacén nuevo debe ser URL-safe; uno existente
+con caracteres especiales se valida con su contraseña original y se codifica
+para JDBC en `ACB_TLS_TRUSTSTORE_PASSWORD_URL`. No instalan dependencias ni confían automáticamente en
+la CA desde el sistema o navegador.
+
+Desde la raíz del workspace en Windows PowerShell:
+
+```powershell
+$env:ACB_TLS_DIR = Join-Path $env:LOCALAPPDATA 'ACB\tls-dev'
+# Definir ACB_TLS_TRUSTSTORE_PASSWORD fuera de Git si se usará Java/MySQL.
+.\gatewayACB\scripts\New-AcbTlsDevCertificates.ps1
+```
+
+Desde la raíz del workspace en Linux, macOS o WSL:
+
+```bash
+export ACB_TLS_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/ACB/tls-dev"
+# Definir ACB_TLS_TRUSTSTORE_PASSWORD fuera de Git si se usará Java/MySQL.
+bash ./gatewayACB/scripts/new-acb-tls-dev-certificates.sh
+```
+
+Si se omite `ACB_TLS_DIR`, cada script usa la ubicación predeterminada indicada
+arriba. PowerShell también acepta `-OutputDirectory`. Los scripts funcionan
+desde cualquier directorio mediante sus rutas absolutas. En Git Bash para
+Windows, si `/CN=` se convierte en una ruta, usar `MSYS2_ARG_CONV_EXCL=/CN=`;
+esta variable no hace falta en Linux/macOS.
+
+El inventario compartido `scripts/tls-certificates.tsv` define 16 certificados
+de servicio con SAN para Web, Gateway, Python, GPS, cuatro Java, MySQL,
+PostgreSQL, MongoDB, dos Redis, Web Admin, Next.js y BFF. Se emiten `ca.crt`,
+`ca.key`, pares `<servicio>.crt`/`<servicio>.key`, `mongo.pem` y, con la
+contraseña indicada, `truststore.p12`. Los Compose montan el material desde
+`ACB_TLS_DIR`; la clave `ca.key` permanece solo en el host. Para todo ACB se
+usa **una CA local por equipo**. Cada desarrollador genera la suya y no comparte
+claves privadas ni certificados de producción.
+
+Una segunda ejecución valida y reutiliza los archivos. Si falta solo el
+certificado de un servicio, reutiliza su clave válida y emite un certificado
+nuevo con la CA existente. Si falta la clave de la CA o un certificado/clave
+existente es inconsistente, detiene la ejecución sin reemplazarlo. Comprueba
+fechas, cadena, par clave/certificado, SAN y uso `serverAuth`; con contraseña,
+también comprueba que el truststore contiene esa CA. Por ejemplo:
+
+```sh
+openssl verify -CAfile "$ACB_TLS_DIR/ca.crt" "$ACB_TLS_DIR/gateway.crt"
+openssl x509 -in "$ACB_TLS_DIR/gateway.crt" -noout -ext subjectAltName
+```
+
+Antes de `docker compose up`, exportar `ACB_TLS_DIR`, preparar el `.env` local
+de Gateway y crear `acb-net` una sola vez. Los servicios Java requieren que
+`ACB_TLS_TRUSTSTORE_PASSWORD_URL` corresponda a la contraseña URL-encoded del
+truststore. Para acceder desde un navegador, confiar **manualmente** en el
+`ca.crt` público de ese equipo. Nunca guardar ni compartir `ca.key` o claves
+de servicio en Git.
 
 ## Pruebas
 

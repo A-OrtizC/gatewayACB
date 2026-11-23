@@ -1,0 +1,17 @@
+name	cn	san
+web	localhost	DNS:localhost,DNS:web,IP:127.0.0.1
+gateway	api-gateway	DNS:api-gateway,DNS:host.docker.internal,DNS:localhost,IP:127.0.0.1
+paths	geoloca-api	DNS:geoloca-api,DNS:localhost,IP:127.0.0.1
+gps	geoloca-gps	DNS:geoloca-gps,DNS:localhost,IP:127.0.0.1
+auth	acb-auth	DNS:acb-auth,DNS:localhost,IP:127.0.0.1
+users	acb-users	DNS:acb-users,DNS:localhost,IP:127.0.0.1
+routes	acb-routes	DNS:acb-routes,DNS:localhost,IP:127.0.0.1
+operations	acb-operations	DNS:acb-operations,DNS:localhost,IP:127.0.0.1
+mysql	acb_mysql_db	DNS:acb_mysql_db,DNS:localhost,IP:127.0.0.1
+postgres	acb_postgres_db	DNS:acb_postgres_db,DNS:localhost,IP:127.0.0.1
+mongo	acb_mongo_db	DNS:acb_mongo_db,DNS:localhost,IP:127.0.0.1
+redis-gps	acb_gps_redis	DNS:acb_gps_redis,DNS:localhost,IP:127.0.0.1
+redis-sessions	redis	DNS:redis,DNS:localhost,IP:127.0.0.1
+webadmin	localhost	DNS:localhost,DNS:web-tls,IP:127.0.0.1
+next	localhost	DNS:localhost,IP:127.0.0.1
+bff	bff	DNS:bff,DNS:localhost,IP:127.0.0.1
