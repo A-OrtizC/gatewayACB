@@ -68,7 +68,7 @@ test("API HTTP de seguimiento GPS", async (t) => {
           upstreamHeaders: { "Retry-After": "1" },
         });
       }
-      return { session: { id: trackingId, state: "active" } };
+      return { session: { id: trackingId, guide_id: "21", state: "active" } };
     },
     getTrackingSessionControl: async () => ({ session: { id: TRACKING_ID } }),
     listTrackingSessionPositions: async (...args) => {
@@ -216,7 +216,7 @@ test("API HTTP de seguimiento GPS", async (t) => {
     );
     assert.equal(state.status, 200);
     assert.deepEqual(await state.json(), {
-      session: { id: TRACKING_ID, state: "active" },
+      session: { id: TRACKING_ID, guide_id: "21", state: "active" },
     });
 
     const observation = await fetch(
@@ -265,6 +265,29 @@ test("API HTTP de seguimiento GPS", async (t) => {
       after_sequence: null,
       limit: null,
     });
+  });
+
+  await t.test("no revela posiciones ni permite cerrar la sesión de otro guía", async () => {
+    const otherToken = jwt.sign(
+      { sub: "22", role: "GUIDE" },
+      process.env.ACB_JWT_SECRET,
+      { algorithm: "HS256" }
+    );
+    const headers = { authorization: `Bearer ${otherToken}` };
+    for (const [path, method] of [
+      ["", "GET"],
+      ["/latest-position", "GET"],
+      ["/positions", "GET"],
+      ["/finish", "POST"],
+    ]) {
+      const response = await fetch(
+        `${baseUrl}/api/v1/tracking-sessions/${TRACKING_ID}${path}`,
+        { method, headers }
+      );
+      assert.equal(response.status, 404);
+      assert.equal(response.headers.get("cache-control"), "no-store");
+    }
+    assert.notEqual(calls.at(-1)[0], "finishTrackingSession");
   });
 
   await t.test("rechaza paginación inválida", async () => {

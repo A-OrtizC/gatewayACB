@@ -6,6 +6,23 @@ const {
 const { HttpError } = require("../../data/clients/httpClient");
 
 function createGpsController(service) {
+  // GPS authenticates the Gateway service, not the end user. Until a durable
+  // administrative ACL exists, only the guide recorded on the session may
+  // read or finish it. A missing guide identity fails closed.
+  async function ownedSession(req, context) {
+    const result = await service.getTrackingSession(
+      req.params.trackingId,
+      context.headers,
+      context.correlationId
+    );
+    if (
+      req.auth?.role !== "GUIDE" ||
+      String(result?.session?.guide_id ?? "") !== String(req.auth.id)
+    ) {
+      throw new HttpError("Sesión de seguimiento no disponible.", 404, "gps");
+    }
+    return result;
+  }
   return {
     // Conserva 201 (nueva) y 200 (replay) del componente Go.
     async createTrackingSession(req, res) {
@@ -38,16 +55,13 @@ function createGpsController(service) {
 
     async getTrackingSession(req, res) {
       const context = buildRequestContext(req);
-      const result = await service.getTrackingSession(
-        req.params.trackingId,
-        context.headers,
-        context.correlationId
-      );
+      const result = await ownedSession(req, context);
       sendResult(res, result);
     },
 
     async getTrackingSessionControl(req, res) {
       const context = buildRequestContext(req);
+      await ownedSession(req, context);
       const result = await service.getTrackingSessionControl(
         req.params.trackingId,
         context.headers,
@@ -58,6 +72,7 @@ function createGpsController(service) {
 
     async listTrackingSessionPositions(req, res) {
       const context = buildRequestContext(req);
+      await ownedSession(req, context);
       const result = await service.listTrackingSessionPositions(
         req.params.trackingId,
         {
@@ -77,6 +92,7 @@ function createGpsController(service) {
     // Go responde 204 sin cuerpo cuando aun no hay observaciones.
     async getLatestPosition(req, res) {
       const context = buildRequestContext(req);
+      await ownedSession(req, context);
       const result = await service.getLatestPosition(
         req.params.trackingId,
         context.headers,
@@ -100,6 +116,7 @@ function createGpsController(service) {
 
     async disableTrackingSession(req, res) {
       const context = buildRequestContext(req);
+      await ownedSession(req, context);
       const result = await service.disableTrackingSession(
         req.params.trackingId,
         context.headers,
@@ -110,6 +127,7 @@ function createGpsController(service) {
 
     async finishTrackingSession(req, res) {
       const context = buildRequestContext(req);
+      await ownedSession(req, context);
       const result = await service.finishTrackingSession(
         req.params.trackingId,
         context.headers,

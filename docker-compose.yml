@@ -7,7 +7,7 @@ services:
     container_name: api-gateway
 
     env_file:
-      - .env
+      - ${ACB_GATEWAY_ENV_FILE:-.env}
 
     ports:
       - "127.0.0.1:5062:5062"
@@ -15,6 +15,29 @@ services:
     environment:
       NODE_ENV: development
       PORT: 5062
+      PATHS_SERVICE_URL: https://geoloca-api:8000
+      GPS_SERVICE_URL: https://geoloca-gps:8080
+      AUTH_SERVICE_URL: https://acb-auth:8084
+      USERS_SERVICE_URL: https://acb-users:8083
+      ROUTES_SERVICE_URL: https://acb-routes:8082
+      OPERATIONS_SERVICE_URL: https://acb-operations:8081
+      ACB_TLS_CERT_FILE: /run/acb-tls/gateway.crt
+      ACB_TLS_KEY_FILE: /run/acb-tls/gateway.key
+      NODE_EXTRA_CA_CERTS: /run/acb-tls/ca.crt
+
+    volumes:
+      - type: bind
+        source: ${ACB_TLS_DIR:?Set external ACB_TLS_DIR}/gateway.crt
+        target: /run/acb-tls/gateway.crt
+        read_only: true
+      - type: bind
+        source: ${ACB_TLS_DIR:?Set external ACB_TLS_DIR}/gateway.key
+        target: /run/acb-tls/gateway.key
+        read_only: true
+      - type: bind
+        source: ${ACB_TLS_DIR:?Set external ACB_TLS_DIR}/ca.crt
+        target: /run/acb-tls/ca.crt
+        read_only: true
 
     restart: unless-stopped
 

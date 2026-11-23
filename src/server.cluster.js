@@ -4,7 +4,11 @@ const { ClusterMemoryStorePrimary } = require('@express-rate-limit/cluster-memor
 const services = require('./config/services');
 services.assertConfigured();
 const app = require('./app');
+const { createAppServer, tlsOptions } = require('./config/appServer');
 const PORT = process.env.PORT || 5062;
+
+// Validate the mounted pair in the primary process before forking workers.
+tlsOptions();
 
 // Solo crear workers en modo producción o cuando se especifique CLUSTER_ENABLED=true
 if (cluster.isPrimary) {
@@ -75,7 +79,7 @@ if (cluster.isPrimary) {
   });
 
 } else {
-  app.listen(PORT, () => {
+  createAppServer(app).listen(PORT, () => {
     console.log(`[${process.pid}] Worker escuchando en el puerto ${PORT}`);
   });
 }

@@ -301,7 +301,7 @@ test("el tracking GPS se enruta solo al componente Go", async (t) => {
     },
     getTrackingSession: async (...args) => {
       calls.push(["getTrackingSession", ...args]);
-      return { tracking_id: "t-1" };
+      return { session: { tracking_id: "t-1", guide_id: "1" } };
     },
     registerObservation: async (...args) => {
       calls.push(["registerObservation", ...args]);
