@@ -148,6 +148,38 @@ El contenedor se une a `acb-net` y usa los alias DNS de los servicios Java,
 Python y GPS. El despliegue Compose requiere `ACB_TLS_DIR` y un `.env` local;
 sirve HTTPS en `127.0.0.1:5062` y valida los certificados de sus destinos.
 
+## One-command ACB Development Setup
+
+Con Docker Compose, OpenSSL, `keytool` (JDK) y `curl` disponibles, ubique los cinco
+repositorios como carpetas hermanas en `ACB`. Desde la raíz de ese workspace:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy RemoteSigned -File .\gatewayACB\scripts\Start-AcbDev.ps1
+```
+
+```bash
+bash ./gatewayACB/scripts/start-acb-dev.sh
+```
+
+El comando crea los `.env` que falten sin reemplazar valores personales, prepara
+una CA y certificados de desarrollo fuera de Git, conserva o crea el truststore
+con una contraseña local propia, configura `ACB_TLS_DIR` para los cinco Compose,
+valida la configuración, crea `acb-net` si falta y levanta los stacks existentes.
+También completa secretos funcionales faltantes de sesiones y GPS para que los
+ejemplos locales puedan arrancar. La CA del navegador se instala manualmente;
+el script comprueba HTTPS con `ca.crt` sin cambiar la confianza del sistema.
+
+Al terminar, compruebe `https://localhost:8443`, `https://localhost:8280` y
+`https://localhost:5062/api/v1/health`. Puede usar `-PrepareOnly` o `--prepare-only`
+para validar la preparación sin levantar contenedores. Si ya existe un
+`truststore.p12` sin contraseña local válida, o una variable de proceso TLS
+contradice un `.env`, el script se detiene y explica el conflicto sin reemplazar
+certificados ni volúmenes. La ruta TLS puede cambiarse con `-TlsDirectory` o
+`--tls-dir`; por defecto usa la carpeta local de datos del usuario.
+Si un puerto publicado, por ejemplo `5432`, está ocupado por otro proceso, el
+script se detiene antes de iniciar contenedores; libere ese puerto o acuerde
+su configuración con el equipo. No cambia puertos ni detiene servicios ajenos.
+
 ## Development TLS Certificate Generation
 
 Los scripts de `gatewayACB/scripts/` generan certificados de **desarrollo para
@@ -202,7 +234,7 @@ openssl verify -CAfile "$ACB_TLS_DIR/ca.crt" "$ACB_TLS_DIR/gateway.crt"
 openssl x509 -in "$ACB_TLS_DIR/gateway.crt" -noout -ext subjectAltName
 ```
 
-Antes de `docker compose up`, exportar `ACB_TLS_DIR`, preparar el `.env` local
+Para un arranque manual avanzado, antes de `docker compose up`, exportar `ACB_TLS_DIR`, preparar el `.env` local
 de Gateway y crear `acb-net` una sola vez. Los servicios Java requieren que
 `ACB_TLS_TRUSTSTORE_PASSWORD_URL` corresponda a la contraseña URL-encoded del
 truststore. Para acceder desde un navegador, confiar **manualmente** en el
